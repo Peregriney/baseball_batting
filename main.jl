@@ -333,6 +333,56 @@ CSV.write("probmemo.csv", df)
 
 
 
+# Convert h_memo to DataFrame
+h_df = DataFrame(i = [key[1] for key in keys(h_memo)],
+                 b_prime = [key[2] for key in keys(h_memo)],
+                 r = [key[3] for key in keys(h_memo)],
+                 value = values(h_memo))
+
+# Convert g_memo to DataFrame
+g_df = DataFrame(b = [key[1] for key in keys(g_memo)],
+                 b_prime = [key[2] for key in keys(g_memo)],
+                 r = [key[3] for key in keys(g_memo)],
+                 value = values(g_memo))
+# Save h_memo DataFrame to CSV
+CSV.write("hmemo.csv", h_df)
+
+# Save g_memo DataFrame to CSV
+CSV.write("gmemo.csv", g_df)
+
+
+# Initialize arrays to store the data
+b_values = Float64[]
+j_values = Float64[]
+outs_values = Int[]
+base1_values = Int[]
+base2_values = Int[]
+base3_values = Int[]
+value_values = Float64[]
+
+# Iterate through keys and values of the dictionary once
+for (key, value) in memo
+    push!(b_values, key.b)
+    push!(j_values, key.j)
+    push!(outs_values, key.outs)
+    push!(base1_values, key.base1)
+    push!(base2_values, key.base2)
+    push!(base3_values, key.base3)
+    push!(value_values, value)
+end
+
+# Create the DataFrame from the collected data
+memo_df = DataFrame(b = b_values,
+                     j = j_values,
+                     outs = outs_values,
+                     base1 = base1_values,
+                     base2 = base2_values,
+                     base3 = base3_values,
+                     value = value_values)
+
+# Save the DataFrame to a CSV file
+CSV.write("fmemo.csv", memo_df)
+
 #= 
 #Single-Inning Test Cases
 @time e = expectedRuns(1, 1)
