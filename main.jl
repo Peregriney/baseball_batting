@@ -106,13 +106,16 @@ function f(state::State)::Float64
     return value
 end
 
-function runsScored(state::State)::Float64
-    b, j, outs, base1, base2, base3 = state.b, state.j, state.outs, state.base1, state.base2, state.base3
-    return j - 3 - base1 - base2 - base3    
-end
+
+h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
+g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
 
 function g(b::Int, b_prime::Int, r::Int)::Float64
   #equals sum of all states in memo WHERE outs == 3 AND b=b and j = b_prime and r = runsScored(state)
+  key = (b, b_prime, r)
+  if haskey(g_memo, key)
+      return g_memo[key]
+  end
 
   sumstore = 0
     for (state, value) in memo
@@ -120,13 +123,14 @@ function g(b::Int, b_prime::Int, r::Int)::Float64
             sumstore += value
         end
     end
+  g_memo[key] = sumstore
   return sumstore
 end
 
 function g_thread(b::Int, b_prime::Int, r::Int)::Float64
     sumstore = Threads.Atomic{Float64}(0.0)
     @threads for (state, value) in collect(memo)
-        
+
         if state.outs == 3 && state.b == b && Batters(state.b, state.j) == b_prime && r == runsScored(state)
             Threads.atomic_add!(sumstore, value)
         end
@@ -134,8 +138,8 @@ function g_thread(b::Int, b_prime::Int, r::Int)::Float64
     return sumstore[]
 end
 
-# the probability that the last batter in inning i_cur is b, and runs (summing also the innings < i_cur) = r
 function h(i::Int, b_prime::Int, r::Int)::Float64
+  # the probability that the last batter in inning i_cur is b, and runs (summing also the innings < i_cur) = r
     if i == 1
         return g(Batter(1), b_prime, r)
     end
@@ -152,30 +156,38 @@ function h(i::Int, b_prime::Int, r::Int)::Float64
 end
 
 function h_parallel(i::Int, b_prime::Int, r::Int)::Float64
-    if i == 1
-        return g(Batter(1), b_prime, r)
+    key = (i, b_prime, r)
+    if haskey(h_memo, key)
+        return h_memo[key]
     end
 
-    sum = 0.0
-    @threads for b in 1:9
-        local sum_b = 0.0
-        for r_prime in 0:r
-            sum_b += h(i-1, b, r_prime) * g(Next(b),b_prime, r-r_prime)
+    if i == 1
+        result = g(Batter(1), b_prime, r)
+    else
+        result = 0.0
+        for b in 1:9
+            local sum_b = 0.0
+            for r_prime in 0:r
+                sum_b += h_parallel(i-1, b, r_prime) * g(Next(b), b_prime, r-r_prime)
+            end
+            result += sum_b
         end
-        sum += sum_b
     end
-    return sum
+
+    h_memo[key] = result
+    return result
 end
+
 
 #exclusively for test, implies i=1 only
 function h_t(i::Int, b_prime::Int, r::Int)::Float64
     return g_thread(b_prime, b_prime, r)
 end
 
-
 #populate all entries in memo: b can be 1:9, j can be 1:27, outs can be 0:3, b1,b2,b3 can all be 0/1
 function populateMemo()
-    @threads for b in 1:9
+    for b in 1:9
+        #println(b, " b for populateMemo")
         for j in 1:27 ###Change Parameters after test
             for outs in -1:3
                 for b1 in 0:1
@@ -190,44 +202,19 @@ function populateMemo()
     end
 end
 
-
-
 probmemo = Dict{Int, Float64}()
 function prob(r::Int, INGS::Int)::Float64
 
     sum = 0.0
     #println("entering the prob function, 1:9")
-    for b in 1:9 
-        if b == 1
-          println(b, " = b , entering prob() function")
-        end
-        sum += h_parallel(INGS,b,r) 
+    for b in 1:9
+        sum += h_parallel(INGS,b,r)
     end
     println("p(", r, ") is ", sum)
     probmemo[r] = sum
     return sum
 end
 
-##FUNCTION
-#=
-function expectedRuns(rmax::Int)::Float64
-    sum = 0.0
-    @distributed (+) for r in 0:rmax #CHANG TO 40
-        println(r, "expected runs r value")
-        sum += (r * prob(r))
-    end
-    return sum
-end
-=#
-#=
-function expectedRuns(rmax::Int, INGS::Int)::Float64
-    sum = @distributed (+) for r in 0:rmax
-        println(r, " expected runs r value")
-        r * prob(r,INGS)
-    end
-    return sum
-end
-=#
 
 function expectedRuns(rmax::Int, INGS::Int)::Float64
     sum = Atomic{Float64}(0.0)  # Use an atomic variable for thread-safe summation
@@ -332,18 +319,37 @@ df = DataFrame(r = keys(probmemo), probability = values(probmemo))
 CSV.write("probmemo.csv", df)
 
 
+hi_values = Int[]
+hbprime_values = Int[]
+hr_values = Int[]
+h_values = Float64[]
+for (key, value) in h_memo
+    push!(hi_values, key[1])
+    push!(hbprime_values, key[2])
+    push!(hr_values, key[3])
+    push!(h_values,value)
+end
 
-# Convert h_memo to DataFrame
-h_df = DataFrame(i = [key[1] for key in keys(h_memo)],
-                 b_prime = [key[2] for key in keys(h_memo)],
-                 r = [key[3] for key in keys(h_memo)],
-                 value = values(h_memo))
+gb_values = Int[]
+gbprime_values = Int[]
+gr_values = Int[]
+g_values = Float64[]
+for (key, value) in g_memo
+    push!(gb_values, key[1])
+    push!(gbprime_values, key[2])
+    push!(gr_values, key[3])
+    push!(g_values,value)
+end
 
-# Convert g_memo to DataFrame
-g_df = DataFrame(b = [key[1] for key in keys(g_memo)],
-                 b_prime = [key[2] for key in keys(g_memo)],
-                 r = [key[3] for key in keys(g_memo)],
-                 value = values(g_memo))
+h_df = DataFrame(i = hi_values,
+                    bprime = hbprime_values,
+                    r = hr_values,
+                    value = value_values)
+g_df = DataFrame(b = gb_values,
+                     bprime = gbprime_values,
+                     r = gr_values,
+                     value = g_values)
+
 # Save h_memo DataFrame to CSV
 CSV.write("hmemo.csv", h_df)
 
