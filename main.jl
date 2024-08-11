@@ -223,7 +223,7 @@ function expectedRuns(rmax::Int, INGS::Int)::Float64
     sum = Atomic{Float64}(0.0)  # Use an atomic variable for thread-safe summation
 
     @threads for r in 0:rmax
-        println(r, " expected runs r value")
+        #println(r, " expected runs r value")
         Threads.atomic_add!(sum, r * prob(r, INGS))  # Safely add to the atomic sum
     end
 
@@ -347,7 +347,7 @@ end
 h_df = DataFrame(i = hi_values,
                     bprime = hbprime_values,
                     r = hr_values,
-                    value = value_values)
+                    value = h_values)
 g_df = DataFrame(b = gb_values,
                      bprime = gbprime_values,
                      r = gr_values,
