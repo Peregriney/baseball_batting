@@ -1,5 +1,3 @@
-import Pkg; Pkg.add("CSV"); Pkg.add("DataFrames")
-
 using CSV, DataFrames, Distributed, Base.Threads, Random
 
 # Define the state space
