@@ -106,6 +106,11 @@ function f(state::State)::Float64
     return value
 end
 
+function runsScored(state::State)::Float64
+    b, j, outs, base1, base2, base3 = state.b, state.j, state.outs, state.base1, state.base2, state.base3
+    return j - 3 - base1 - base2 - base3
+end
+
 
 h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
 g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
