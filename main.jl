@@ -303,7 +303,25 @@ check_probabilities(playersData)
 
 
 # Currently, batting order (lineup) is just randomly initialized
-lineup = randperm(9)
+if length(ARGS) <1 || length(ARGS) != 9 
+    println("batting lineup initialized to random, incorrect formatting or no lineup given") 
+    lineup = randperm(9)
+    println("lineup", lineup)
+end
+function parse_args(args)
+    try
+        return [parse(Int64, arg) for arg in args]
+    catch e
+        println("Error: All arguments must be numbers. Setting random lineup.")
+        lineup = randperm(9)
+        println("lineup", lineup)
+    end
+end
+elseif length(ARGS) == 9
+    lineup = parse_args(ARGS)
+    println("accepted batting lineup", lineup)
+end
+
 function Batter(idx::Int)::Int
     return lineup[idx]
 end
