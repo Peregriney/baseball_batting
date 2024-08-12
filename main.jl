@@ -84,7 +84,6 @@ function f(state::State)::Float64
                 f(State(b, j - 1, outs, 1, 1, 0)) * Double(b_next) +
                 f(State(b, j - 1, outs, 1, 0, 1)) * Double(b_next) +
                 f(State(b, j - 1, outs, 1, 1, 1)) * Double(b_next)
-    #bases are loaded :o
     elseif base1 == 1 && base2 == 1 && base3 == 1
         value = f(State(b,j-1,outs-1,base1,base2,base3)) * OutGet(b_next) +
                 f(State(b, j - 1, outs, 1, 1, 0)) * Walk(b_next) +
@@ -96,7 +95,6 @@ function f(state::State)::Float64
 
     end
 
-    # Store the value in the memo
     memo[state] = value
 
     #Probability to reach state given first batter is Player(b), then after j batters have come to bat, there are OUTS outs and b1-b3 represent boolean presence of players on the bases
@@ -156,7 +154,6 @@ probmemo = Dict{Int, Float64}()
 function prob(r::Int, INGS::Int)::Float64
 
     sum = 0.0
-    #println("entering the prob function, 1:9")
     for b in 1:9
         sum += h_parallel(INGS,b,r)
     end
@@ -237,10 +234,10 @@ function check_probabilities(playersData)
         if probability_sum < 0.99 || probability_sum > 1.01  # Checking if sum ~= 1
             println("Error: Probabilities in row ", i, " do not sum to 1. Sum is: ", probability_sum)
         else
-            println("Row ", i, ": ", "Good")
+            print()#println("Row ", i, ": ", "Good")
         end
     end
-    println("checked probs")
+    println("Player batting probabilities all sum to 1")
 end
 
 function try_read()
@@ -257,7 +254,7 @@ end
 playersData = CSV.read("redsox_2023.csv", DataFrame)
 # Read probabilities and check that each player's stats sum to 1
 if length(ARGS) <1
-    print("No filename specified, defaulting to redsox_2023.csv")
+    println("No filename specified, defaulting to redsox_2023.csv")
     playersData = CSV.read("redsox_2023.csv", DataFrame)
 else
     playersData = try_read()
