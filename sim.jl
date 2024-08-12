@@ -248,7 +248,10 @@ end
 lineup = (1,2,3,4,5,6,7,8,9)
 println("Simulation average, std, max, min")
 avg, stdev, maxx, minn = average_score(lineup, 10000)
-println(avg,stdev,maxx,minn)
+println(avg)
+println(stdev)
+println(maxx)
+println(minn)
 
 
 # average_score: Calculates the average score from simulating a number of games
