@@ -298,7 +298,21 @@ function check_probabilities(playersData)
 end
 
 # Read probabilities and check that each player's stats sum to 1
-playersData = CSV.read("redsox_2023.csv", DataFrame)
+if length(ARGS) <1
+    print("No filename specified, defaulting to redsox_2023.csv")
+    playersData = CSV.read("redsox_2023.csv", DataFrame)
+
+else
+    try 
+        csv_str = ARGS[1]
+        playersData = CSV.read(csv_file, DataFrame)
+    catch e
+        println("Error: first argument must be CSV file, could not read. Format as [pathname.csv] to command-line. Defaulting to redsox_2023.csv")
+        playersData = CSV.read("redsox_2023.csv", DataFrame)
+    end
+end
+
+
 check_probabilities(playersData)
 
 
@@ -313,14 +327,14 @@ function parse_args(args)
 end
 
 # Currently, batting order (lineup) is just randomly initialized
-if length(ARGS) <1 || length(ARGS) != 9 
-    println("batting lineup initialized to random, incorrect formatting or no lineup given") 
+if length(ARGS) <2 || length(ARGS) != 10
+    println("batting lineup initialized to random. No lineup given") 
     lineup = randperm(9)
     println("lineup", lineup)
 
 
-elseif length(ARGS) == 9
-    lineup = parse_args(ARGS)
+elseif length(ARGS) == 10
+    lineup = parse_args(ARGS[2:])
     println("accepted batting lineup", lineup)
 end
 
