@@ -2,6 +2,7 @@ using Random
 using DataFrames, CSV
 using StatsBase
 using Permutations
+using Plots
 
 probmemo = CSV.read("probmemo.csv", DataFrame)
 
@@ -233,16 +234,16 @@ end
 playersData = CSV.read("redsox_2023.csv", DataFrame)
 # Read probabilities and check that each player's stats sum to 1
 if length(ARGS) <1
-    print("No filename specified, defaulting to redsox_2023.csv")
+    println("No filename specified, defaulting to redsox_2023.csv")
     playersData = CSV.read("redsox_2023.csv", DataFrame)
 else
     playersData = try_read()
 end
 
 lineup = (1,2,3,4,5,6,7,8,9)
-print("average, std, max, min")
+println("Simulation average, std, max, min")
 avg, stdev, maxx, minn = average_score(lineup, 10000)
-
+println(avg,stdev,maxx,minn)
 
 
 # average_score: Calculates the average score from simulating a number of games
