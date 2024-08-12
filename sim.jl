@@ -81,15 +81,20 @@ end
 
 # single_bases: Function to update the bases when a player hits a single (1B)
 function single_bases(bases::Vector{Int64})
-    # Add runs for players on second and third base
-    bases[4] += bases[2] + bases[3]
-    # Clear second and third base
-    bases[2] = 0
+    # Add runs for players on THIRD BASE ONLY ****corrected from original simulation
+    bases[4] += bases[3]
+    # Clear third base
     bases[3] = 0
     # If there was a player on first, move him to second
     if bases[1] == 1
         bases[2] = 1
     end
+    # If there was a player on second, move him to third **corrected from og
+    if bases[2] == 1
+        bases[3] = 1
+        bases[2] = 0
+    end
+
     # The hitter takes first base
     bases[1] = 1
 
@@ -316,7 +321,7 @@ end
 sorted_values = sorted_values_by_keys(probmemo)
 n = length(count_array)
 
-plot(bar(collect(0:n-1),[sorted_values[1:n] count_array ], label=["DP" "sim"]),xlabel="Score (# of runs)", ylabel="Frequency (# of games)", title="Histogram for DP-extrapolated vs. Simulation", legend=true)
+plot(bar(collect(0:n-1),[sorted_values[1:n] count_array ], label=["DP" "sim"], alpha=[1.0 0.5]),xlabel="Score (# of runs)", ylabel="Frequency (# of games)", title="Histogram for DP-extrapolated vs. Simulation", legend=true)
 savefig("histogram-comparison.png")
 
 sliced_longer_array = sorted_values[1:n]
