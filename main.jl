@@ -297,19 +297,23 @@ function check_probabilities(playersData)
     println("checked probs")
 end
 
+function try_read()
+    try 
+        csv_str = ARGS[1]
+        data_csv = CSV.read(csv_str, DataFrame)
+    catch e
+        println("Error: first argument must be CSV file, could not read. Format as [pathname.csv] to command-line. Defaulting to redsox_2023.csv")
+        data_csv = CSV.read("redsox_2023.csv",DataFrame)
+    end
+    return data_csv
+end
+playersData = CSV.read("redsox_2023.csv", DataFrame)
 # Read probabilities and check that each player's stats sum to 1
 if length(ARGS) <1
     print("No filename specified, defaulting to redsox_2023.csv")
     playersData = CSV.read("redsox_2023.csv", DataFrame)
-
 else
-    try 
-        csv_str = ARGS[1]
-        playersData = CSV.read(csv_file, DataFrame)
-    catch e
-        println("Error: first argument must be CSV file, could not read. Format as [pathname.csv] to command-line. Defaulting to redsox_2023.csv")
-        playersData = CSV.read("redsox_2023.csv", DataFrame)
-    end
+    playersData = try_read()
 end
 
 
@@ -334,7 +338,7 @@ if length(ARGS) <2 || length(ARGS) != 10
 
 
 elseif length(ARGS) == 10
-    lineup = parse_args(ARGS[2:])
+    lineup = parse_args(ARGS[2:10])
     println("accepted batting lineup", lineup)
 end
 
