@@ -1,3 +1,6 @@
+ENV["PLOTS_TEST"]=true
+ENV["GKSwstype"]=100
+
 using Random
 using DataFrames, CSV
 using StatsBase
@@ -29,6 +32,19 @@ r_keys = parse_keys(keys_str)
 r_probs = parse_values(values_str)
 probmemo = Dict(r_keys[i] => r_probs[i] for i in 1:length(r_keys))
 
+
+##DP summary statistics
+runidxs = [key for key in keys(probmemo)]
+rprobs = [val for val in values(probmemo)]
+# Calculate the expected number (mean)
+expected_number = sum(runidxs[i] * rprobs[i] for i in 1:length(runidxs))
+# Calculate the variance and standard deviation
+mean_sq = sum((runidxs[i] ^ 2) * rprobs[i] for i in 1:length(runidxs))
+variance = mean_sq - expected_number^2
+std_dev = sqrt(variance)
+# Find minimum and maximum
+min_val = minimum(runidxs)
+max_val = maximum(runidxs)
 
 # at_bat(index) : returns the outcome for a single player's at bat
 function at_bat(index)
@@ -248,10 +264,21 @@ end
 lineup = (1,2,3,4,5,6,7,8,9)
 println("Simulation average, std, max, min")
 avg, stdev, maxx, minn = average_score(lineup, 10000)
-println(avg)
-println(stdev)
-println(maxx)
-println(minn)
+
+# Create DataFrame with Metrics as Rows and DP & Simulated as Columns
+metrics = ["Expected Number (Mean)", "Standard Deviation", "Minimum", "Maximum"]
+dp_values = [expected_number, std_dev, min_val, max_val]
+simulated_values = [avg, stdev, minn, maxx]
+
+df = DataFrame(
+    Metric = metrics,
+    DP = dp_values,
+    Simulated = simulated_values
+)
+
+# Display the DataFrame
+println("Comparison of DP vs. Simulated Summary Stats:")
+println(df)
 
 
 # average_score: Calculates the average score from simulating a number of games
