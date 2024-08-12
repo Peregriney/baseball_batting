@@ -52,4 +52,5 @@ for lngth in 1:lengthmax
 end
 
 scatter(collect(1:lengthmax),exp_rs, xlabel="R",ylabel="Expected R (cumulative sum)")
+savefig("quantile.png")
 
