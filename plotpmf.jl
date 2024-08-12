@@ -4,7 +4,7 @@ using CSV, DataFrames, Distributed, Base.Threads, Random, Plots
 probmemo = CSV.read("probmemo.csv", DataFrame)
 
 keys_str = probmemo.r[1]
-values_str = probmemo.probabilities[1]
+values_str = probmemo.probability[1]
 # Function to parse the list of values from a string
 function parse_values(values_str::String)::Vector{Int}
     # Remove brackets and split by comma
