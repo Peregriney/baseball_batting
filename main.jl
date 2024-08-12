@@ -62,7 +62,7 @@ function f(state::State)::Float64
                 f(State(b, j - 1, outs, 0, 1, 1)) * Double(b_next) +
                 f(State(b, j - 1, outs, 0, 0, 1)) * Double(b_next)
 
-###NOTE: THIS example seemed to have a typo in the word doc. The case f(b,j,outs,0,1,0 = .... triple.
+###NOTE: typo from DP documentation? The case f(b,j,outs,0,1,0 = .... triple.
 #Seems like it should actually match to f(b,j,outs,0,0,1) according to the actual logic of the transition, so that's how I implemented it.
     elseif base1 == 0 && base2 == 0 && base3 == 1
         value = f(State(b, j - 1, outs-1, base1, base2, base3)) * OutGet(b_next) +
@@ -99,8 +99,7 @@ function f(state::State)::Float64
     # Store the value in the memo
     memo[state] = value
 
-    # Return the value --> value is the PROBABILITY for a state that:
-    #given first batter is Player(b), then after j batters have come to bat, there are OUTS outs and b1-b3 represent boolean presence of players on the bases
+    #Probability to reach state given first batter is Player(b), then after j batters have come to bat, there are OUTS outs and b1-b3 represent boolean presence of players on the bases
     return value
 end
 
@@ -130,34 +129,6 @@ function g(b::Int, b_prime::Int, r::Int)::Float64
   return sumstore
 end
 
-function g_thread(b::Int, b_prime::Int, r::Int)::Float64
-    sumstore = Threads.Atomic{Float64}(0.0)
-    @threads for (state, value) in collect(memo)
-
-        if state.outs == 3 && state.b == b && Batters(state.b, state.j) == b_prime && r == runsScored(state)
-            Threads.atomic_add!(sumstore, value)
-        end
-    end
-    return sumstore[]
-end
-
-function h(i::Int, b_prime::Int, r::Int)::Float64
-  # the probability that the last batter in inning i_cur is b, and runs (summing also the innings < i_cur) = r
-    if i == 1
-        return g(Batter(1), b_prime, r)
-    end
-
-    #consider cases i > 1 where we must sum previous innings too
-    sum = 0.0
-    for b in 1:9
-        for r_prime in 0:r ####WAIT!! Do I sum to r or to 40? plz double-check.
-
-            sum += h(i-1, b, r_prime) * g(Next(b),b_prime, r-r_prime)
-        end
-    end
-    return sum
-end
-
 function h_parallel(i::Int, b_prime::Int, r::Int)::Float64
     key = (i, b_prime, r)
     if haskey(h_memo, key)
@@ -181,10 +152,28 @@ function h_parallel(i::Int, b_prime::Int, r::Int)::Float64
     return result
 end
 
+probmemo = Dict{Int, Float64}()
+function prob(r::Int, INGS::Int)::Float64
 
-#exclusively for test, implies i=1 only
-function h_t(i::Int, b_prime::Int, r::Int)::Float64
-    return g_thread(b_prime, b_prime, r)
+    sum = 0.0
+    #println("entering the prob function, 1:9")
+    for b in 1:9
+        sum += h_parallel(INGS,b,r)
+    end
+    println("p(", r, ") is ", sum)
+    probmemo[r] = sum
+    return sum
+end
+
+
+function expectedRuns(rmax::Int, INGS::Int)::Float64
+    sum = Atomic{Float64}(0.0)  # Use an atomic variable for thread-safe summation
+
+    @threads for r in 0:rmax
+        Threads.atomic_add!(sum, r * prob(r, INGS))  # Safely add to the atomic sum
+    end
+
+    return sum[]
 end
 
 #populate all entries in memo: b can be 1:9, j can be 1:27, outs can be 0:3, b1,b2,b3 can all be 0/1
@@ -205,85 +194,42 @@ function populateMemo()
     end
 end
 
-probmemo = Dict{Int, Float64}()
-function prob(r::Int, INGS::Int)::Float64
-
-    sum = 0.0
-    #println("entering the prob function, 1:9")
-    for b in 1:9
-        sum += h_parallel(INGS,b,r)
-    end
-    println("p(", r, ") is ", sum)
-    probmemo[r] = sum
-    return sum
-end
-
-
-function expectedRuns(rmax::Int, INGS::Int)::Float64
-    sum = Atomic{Float64}(0.0)  # Use an atomic variable for thread-safe summation
-
-    @threads for r in 0:rmax
-        #println(r, " expected runs r value")
-        Threads.atomic_add!(sum, r * prob(r, INGS))  # Safely add to the atomic sum
-    end
-
-    return sum[]
-end
-
 # Define the functions for player statistics --> all of these need to retrieve from some array of values for each of the 9players
 function Single(i::Int)::Float64
-    # CSV structure ref. based on simulator.ipynb code
     return playersData[i,5]
 end
 
 function Double(i::Int)::Float64
-    # CSV structure ref. based on simulator.ipynb code
     return playersData[i,6]
 end
 
 function Triple(i::Int)::Float64
-    # CSV structure ref. based on simulator.ipynb code
     return playersData[i,7]
 end
 
 function HomeRun(i::Int)::Float64
-    # CSV structure ref. based on simulator.ipynb code, function based on simulator.ipynb too
-    playersInfo = playersData[i, 1:8]
-    # Extract the probabilities for each outcome for the player
-    playerSO = playersInfo[2] # Strikeout probability
-    playerOO = playersInfo[3] # Other out probability
-    playerBB = playersInfo[4] # Walk probability
-    player1B = playersInfo[5] # Single probability
-    player2B = playersInfo[6] # Double probability
-    player3B = playersInfo[7] # Triple probability
-    playerHR = 1 - (playerSO + playerOO + playerBB + player1B + player2B + player3B) # Home run probability
-    return playerHR
+    return playersData[i,8]
 end
 
 function Walk(i::Int)::Float64
-    # CSV structure ref. based on simulator.ipynb code
     return playersData[i,4]
 end
 
 function OutGet(i::Int)::Float64
-    # CSV structure ref. based on simulator.ipynb code
     return playersData[i,2] + playersData[i,3]
 end
 
 # Define the function for the next batter
 function Next(b::Int)::Int
-    # --> checked, this is correct
     return (b % 9) + 1
 end
 
 # Define the function for the j-th batter in an inning
 function Batters(b::Int, j::Int)::Int
-    # Replace this with the actual logic for determining the j-th batter in an inning --> I haven't checked this actually, I think it's right but not 100% sure.
     return (b + j - 1) % 9 + 1
 end
 
 ## Function to check if the probabilities in each row sum to 1
-#taken from simulator.ipynb :)
 function check_probabilities(playersData)
     for i in 1:nrow(playersData)
         row = playersData[i, :]
@@ -430,16 +376,3 @@ memo_df = DataFrame(b = b_values,
 
 # Save the DataFrame to a CSV file
 CSV.write("fmemo.csv", memo_df)
-
-#= 
-#Single-Inning Test Cases
-@time e = expectedRuns(1, 1)
-println(e)
-
-@time e2 = expectedRuns(5, 1)
-println(e2)
-@time e3 = expectedRuns(10, 1)
-println(e3)
-@time e4 = expectedRuns(40, 1)
-println(e4)
-=#
