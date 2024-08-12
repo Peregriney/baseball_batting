@@ -3,6 +3,32 @@ using DataFrames, CSV
 using StatsBase
 using Permutations
 
+probmemo = CSV.read("probmemo.csv", DataFrame)
+
+keys_str = probmemo.r[1]
+values_str = probmemo.probability[1]
+# Function to parse the list of values from a string
+function parse_keys(values_str::String)::Vector{Int}
+    # Remove brackets and split by comma
+    values_str = strip(values_str, ['[', ']'])
+    elements = split(values_str, ",")
+    # Convert the split strings to integers
+    return parse.(Int, elements)
+end
+
+function parse_values(values_str::String)::Vector{Float64}
+    # Remove brackets and split by comma
+    values_str = strip(values_str, ['[', ']'])
+    elements = split(values_str, ",")
+    # Convert the split strings to integers
+    return parse.(Float64, elements)
+end
+
+r_keys = parse_keys(keys_str)
+r_probs = parse_values(values_str)
+probmemo = Dict(r_keys[i] => r_probs[i] for i in 1:length(r_keys))
+
+
 # at_bat(index) : returns the outcome for a single player's at bat
 function at_bat(index)
     # Retrieve the player's data from the dataset using the index
