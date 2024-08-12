@@ -44,3 +44,4 @@ r_prob_vals = collect(values(probmemo))
 
 # Create scatterplot
 scatter(r_keys, r_prob_vals, xlabel="Runs in game", ylabel="Probability", title="PMF for # of runs scored")
+savefig("pmf.png")
