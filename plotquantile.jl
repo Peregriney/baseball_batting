@@ -1,3 +1,5 @@
+ENV["PLOTS_TEST"]=true
+ENV["GKSwstype"]=100
 
 using CSV, DataFrames, Distributed, Base.Threads, Random, Plots
 
