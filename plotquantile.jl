@@ -41,7 +41,7 @@ if length(ARGS) < 1
   lengthmax = 40
 elseif length(ARGS) == 1
   lengthmax = parse(Int64, ARGS[1])
-  println("custom specified maxR is ", lengthmax
+  println("custom specified maxR is ", lengthmax)
 end
 
 for lngth in 1:lengthmax
