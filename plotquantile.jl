@@ -43,13 +43,12 @@ if length(ARGS) < 1
   lengthmax = 40
 elseif length(ARGS) == 1
   lengthmax = parse(Int64, ARGS[1])
-  println("custom specified maxR is ", lengthmax)
+  println("Custom specified maxR is ", lengthmax)
 end
 
 for lngth in 1:lengthmax
     # Compute expected number for the current length
     expected_number = sum(runidxs[i] * rprobs[i] for i in 1:lngth)
-    println("r, e[r], expected runs ", lngth, ",  ", rprobs[lngth], ",  ", expected_number)
     push!(exp_rs, expected_number)
 end
 
