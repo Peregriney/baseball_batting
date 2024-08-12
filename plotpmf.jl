@@ -1,3 +1,5 @@
+ENV["PLOTS_TEST"]=true
+ENV["GKSwstype"]=100
 using CSV, DataFrames, Distributed, Base.Threads, Random, Plots
 probmemo = CSV.read("probmemo.csv", DataFrame)
 
@@ -42,9 +44,6 @@ max_val = maximum(runidxs)
 
 # Print results
 println("Expected Number (Mean): $expected_number")
-println("Standard Deviation: $std_dev")
-println("Minimum: $min_val")
-println("Maximum: $max_val")
 
 r_keys = collect(keys(probmemo))
 r_prob_vals = collect(values(probmemo))
