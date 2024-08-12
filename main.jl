@@ -301,11 +301,12 @@ function try_read()
     try 
         csv_str = ARGS[1]
         data_csv = CSV.read(csv_str, DataFrame)
+        return data_csv
     catch e
         println("Error: first argument must be CSV file, could not read. Format as [pathname.csv] to command-line. Defaulting to redsox_2023.csv")
         data_csv = CSV.read("redsox_2023.csv",DataFrame)
+        return data_csv
     end
-    return data_csv
 end
 playersData = CSV.read("redsox_2023.csv", DataFrame)
 # Read probabilities and check that each player's stats sum to 1
