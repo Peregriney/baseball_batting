@@ -310,7 +310,7 @@ df = DataFrame(
 # Display the DataFrame
 println("Comparison of DP vs. Simulated Summary Stats:")
 println(df)
-
+println()
 
 # average_score: Calculates the average score from simulating a number of games
 function get_sim(lineup, num_games)
@@ -340,7 +340,7 @@ function get_sim(lineup, num_games)
 end
 
 
-scores, avg = get_sim(lineup, numSims)
+sim_scores, sim_avg = get_sim(lineup, numSims)
 
 
 function count_occurrences(scores::Vector{Int})
@@ -366,7 +366,7 @@ function count_occurrences(scores::Vector{Int})
     return result
 end
 
-count_array = count_occurrences(scores)
+sim_count_array = count_occurrences(sim_scores)
 
 
 function sorted_values_by_keys(dict::Dict{Int, Float64})
@@ -374,7 +374,7 @@ function sorted_values_by_keys(dict::Dict{Int, Float64})
     sorted_keys = sort(collect(keys(dict)))
     
     # Get the values sorted by their keys
-    sorted_values = [dict[key]* numSims for key in sorted_keys]
+    sorted_values = [dict[key] for key in sorted_keys]
     
     return sorted_values
 end
@@ -382,11 +382,52 @@ end
 sorted_values = sorted_values_by_keys(probmemo)
 n = length(count_array)
 
-plot(bar(collect(0:n-1),[sorted_values[1:n] count_array ], label=["DP" "sim"], alpha=[1.0 0.5]),xlabel="Score (# of runs)", ylabel="Frequency (# of games)", title="Histogram for DP-extrapolated vs. Simulation", legend=true)
+plot(bar(collect(0:n-1),[sorted_values[1:n] sim_count_array ], label=["DP" "sim"], alpha=[1.0 0.5]),xlabel="Score (# of runs)", ylabel="Frequency (# of games)", title="Histogram for DP vs. Simulation", legend=true)
 savefig("histogram-comparison.png")
 
 sliced_longer_array = sorted_values[1:n]
-difference = sliced_longer_array .- count_array
+difference = sliced_longer_array .- sim_count_array
 # Plot the difference by index
-plot(difference, label="Difference", xlabel="Index", ylabel="Difference (DP P(r) * Sim total - Sim r count)", title="Element-wise Difference of DP - Sim", xticks = 0:1:n)
+plot(difference .* 100, label="Difference", xlabel="Index", ylabel="% Difference (DP P(r) - Sim Pr(r))", title="Element-wise % Difference of DP - Sim", xticks = 0:1:n, ylims=(-10,10))
 savefig("dpsim-difference.png")
+
+
+
+sum_abs_diff = sum(abs.(difference))
+sum_squared_diff = sum(difference .^ 2)
+correlation = cor(sorted_values[1:n], count_array)
+chi_square_stat = sum((difference .^ 2) ./ sorted_values[1:n])
+
+
+# Create DataFrame with Metrics as Rows and DP & Simulated as Columns
+metrics = ["Sum abs dif", "Sum sq dif", "Corr", "Chi-square"]
+met_vals = [sum_abs_diff, sum_squared_diff, correlation,chi_square_stat]
+
+df_metric = DataFrame(
+    Metric = metrics,
+    Value = met_vals,
+)
+
+# Display the DataFrame
+println("Comparison of DP vs. Simulated histograms:")
+println(df_metric)
+println()
+
+
+df_r = DataFrame(
+  R = collect(0:n-1),
+  Difference = difference./numSims
+)
+println("Table of difference in Pr(r) for DP - sim")
+println(df_r)
+println()
+
+
+df_rs = DataFrame(
+  R = collect(0:n-1),
+  DP = sorted_values[1:n].*100,
+  Sim = count_array.*100
+)
+println("Table of computed Pr(r) for DP and Sim")
+println(df_rs)
+println()
