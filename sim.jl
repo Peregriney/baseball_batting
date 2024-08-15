@@ -97,7 +97,7 @@ end
 
 # single_bases: Function to update the bases when a player hits a single (1B)
 function single_bases(bases::Vector{Int64})
-    # Add runs for players on THIRD BASE ONLY ****corrected from original simulation
+    # Add runs for players on third base ****corrected from original simulation
     bases[4] += bases[3]
     # Clear third base
     bases[3] = 0
@@ -293,7 +293,6 @@ elseif length(ARGS) == 11
     println("Accepted batting lineup ", lineup)
 end
 
-#println("Simulation average, std, max, min")
 avg, stdev, maxx, minn = average_score(lineup, numSims)
 
 # Create DataFrame with Metrics as Rows and DP & Simulated as Columns
