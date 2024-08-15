@@ -17,10 +17,10 @@ g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
 probmemo = Dict{Int, Float64}()
 
 #Define variable ranges
-b_range = [1:9]
-j_range = [1:27]
-outs_range = [-1:3]
-bases_range = [0:1]
+b_range = 1:9
+j_range = 1:27
+outs_range = -1:3
+bases_range = 0:1
 
 # f performs memoized recursion for probability of reaching states in an inning
 function f(state::State)::Float64
