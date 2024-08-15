@@ -385,16 +385,16 @@ plot(bar(collect(0:n-1),[sorted_values[1:n] sim_count_array ], label=["DP" "sim"
 savefig("histogram-comparison.png")
 
 sliced_longer_array = sorted_values[1:n]
-difference = sliced_longer_array .- sim_count_array
+difference = sliced_longer_array .- sim_count_array 
 # Plot the difference by index
-plot(difference .* 100, label="Difference", xlabel="Index", ylabel="% Difference (DP P(r) - Sim Pr(r))", title="Element-wise % Difference of DP - Sim", xticks = 0:1:n, ylims=(-10,10))
+plot(difference .* 100, label="Difference", xlabel="Index", ylabel="Difference (DP P(r) % - Sim Pr(r) %)", title="Element-wise % Difference of DP - Sim", xticks = 0:1:n, ylims=(-5,5))
 savefig("dpsim-difference.png")
 
 
 
 sum_abs_diff = sum(abs.(difference))
 sum_squared_diff = sum(difference .^ 2)
-correlation = cor(sorted_values[1:n], sim_count_array)
+correlation = cor(sorted_values[1:n], sim_count_array )
 chi_square_stat = sum((difference .^ 2) ./ sorted_values[1:n])
 
 
@@ -415,9 +415,9 @@ println()
 
 df_r = DataFrame(
   R = collect(0:n-1),
-  Difference = difference./numSims
+  Difference = difference .*100
 )
-println("Table of difference in Pr(r) for DP - sim")
+println("Table of difference in Pr(r) (%) for DP - sim")
 println(df_r)
 println()
 
@@ -427,6 +427,6 @@ df_rs = DataFrame(
   DP = sorted_values[1:n].*100,
   Sim = sim_count_array.*100
 )
-println("Table of computed Pr(r) for DP and Sim")
+println("Table of computed Pr(r) (%) for DP and Sim")
 println(df_rs)
 println()
