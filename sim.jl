@@ -101,16 +101,15 @@ function single_bases(bases::Vector{Int64})
     bases[4] += bases[3]
     # Clear third base
     bases[3] = 0
-    # If there was a player on first, move him to second
-    if bases[1] == 1
-        bases[2] = 1
-    end
     # If there was a player on second, move him to third **corrected from og
     if bases[2] == 1
         bases[3] = 1
         bases[2] = 0
     end
-
+    # If there was a player on first, move him to second
+    if bases[1] == 1
+        bases[2] = 1
+    end
     # The hitter takes first base
     bases[1] = 1
 
