@@ -290,7 +290,7 @@ if length(ARGS) <2 || length(ARGS) != 11
 
 elseif length(ARGS) == 11
     numSims = parse_single(ARGS[2])
-    lineup = parse_args(ARGS[3:10])
+    lineup = parse_args(ARGS[3:11])
     println("Accepted batting lineup ", lineup)
 end
 
