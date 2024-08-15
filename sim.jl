@@ -77,7 +77,7 @@ function BB_bases(bases::Vector{Int64})
         bases[1] = 1
     elseif bases[1:3] == [0,0,1]
         bases[1] = 1
-        bases[3] = 1
+        bases[3] = 1 
     elseif bases[1:3] == [1,0,0] || bases[1:3] == [0,1,0]
         bases[1] = 1
         bases[2] = 1
@@ -261,9 +261,41 @@ else
     playersData = try_read()
 end
 
+function parse_args(args)
+    try
+        return [parse(Int64, arg) for arg in args]
+    catch e
+        println("Error: All arguments must be numbers. Setting random lineup.")
+        lineup = randperm(9)
+        println("Lineup ", lineup)
+    end
+end
+
+function parse_single(arg)
+    try
+        return parse(Int64, arg)
+    catch e
+        println("Error: Number of games must be positive number.")
+    end
+end
+
+
+numSims = 1000
 lineup = (1,2,3,4,5,6,7,8,9)
-println("Simulation average, std, max, min")
-avg, stdev, maxx, minn = average_score(lineup, 10000)
+if length(ARGS) <2 || length(ARGS) != 11
+    println("Incorrect argument formatting. Defaulting to redsox_2023.csv, 1k simulated games, batting lineup initialized to random.") 
+    lineup = randperm(9)
+    playersData = CSV.read("redsox_2023.csv", DataFrame)
+    println("Lineup ", lineup)
+
+elseif length(ARGS) == 11
+    numSims = parse_single(Int64, ARGS[2])
+    lineup = parse_args(ARGS[3:10])
+    println("Accepted batting lineup ", lineup)
+end
+
+#println("Simulation average, std, max, min")
+avg, stdev, maxx, minn = average_score(lineup, numSims)
 
 # Create DataFrame with Metrics as Rows and DP & Simulated as Columns
 metrics = ["Expected Number (Mean)", "Standard Deviation", "Minimum", "Maximum"]
