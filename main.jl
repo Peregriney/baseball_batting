@@ -10,9 +10,19 @@ struct State
     base3::Int
 end
 
+#Define memoization dictionaries
 memo = Dict{State, Float64}()
+h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
+g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
+probmemo = Dict{Int, Float64}()
 
-# f performs memoized recursion for an inning's possible states
+#Define variable ranges
+b_range = [1:9]
+j_range = [1:27]
+outs_range = [-1:3]
+bases_range = [0:1]
+
+# f performs memoized recursion for probability of reaching states in an inning
 function f(state::State)::Float64
 
     # Check if the value has already been computed
@@ -61,10 +71,7 @@ function f(state::State)::Float64
                 f(State(b, j - 1, outs, 0, 1, 0)) * Double(b_next) +
                 f(State(b, j - 1, outs, 0, 1, 1)) * Double(b_next) +
                 f(State(b, j - 1, outs, 0, 0, 1)) * Double(b_next)
-
-###NOTE: typo from DP documentation? The case f(b,j,outs,0,1,0 = .... triple.
-#Seems like it should actually match to f(b,j,outs,0,0,1) according to the actual logic of the transition, so that's how I implemented it.
-    elseif base1 == 0 && base2 == 0 && base3 == 1
+    elseif base1 == 0 && base2 == 0 && base3 == 1 #modified from doc
         value = f(State(b, j - 1, outs-1, base1, base2, base3)) * OutGet(b_next) +
                 Triple(b_next) * sum(f(State(b, j - 1, outs, b1, b2, b3)) for b1 in [0, 1], b2 in [0, 1], b3 in [0, 1])
     elseif base1 == 1 && base2 == 1 && base3 == 0
@@ -92,26 +99,21 @@ function f(state::State)::Float64
                 f(State(b, j - 1, outs, 1, 1, 1)) * Walk(b_next) +
                 f(State(b, j - 1, outs, 1, 1, 0)) * Single(b_next) +
                 f(State(b, j - 1, outs, 1, 1, 1)) * Single(b_next)
-
     end
-
+    
     memo[state] = value
-
-    #Probability to reach state given first batter is Player(b), then after j batters have come to bat, there are OUTS outs and b1-b3 represent boolean presence of players on the bases
+    #Probability to reach a given state of where first batter is Player(b), j batters have come to bat, and specified outs and bases
     return value
 end
 
+# Compute the number of runs scored in a state
 function runsScored(state::State)::Float64
     b, j, outs, base1, base2, base3 = state.b, state.j, state.outs, state.base1, state.base2, state.base3
     return j - 3 - base1 - base2 - base3
 end
 
-
-h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
-g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
-
+#sum of all states in f-memo where outs == 3 AND b=b and j = b_prime and r = runsScored(state)
 function g(b::Int, b_prime::Int, r::Int)::Float64
-  #equals sum of all states in memo WHERE outs == 3 AND b=b and j = b_prime and r = runsScored(state)
   key = (b, b_prime, r)
   if haskey(g_memo, key)
       return g_memo[key]
@@ -127,6 +129,7 @@ function g(b::Int, b_prime::Int, r::Int)::Float64
   return sumstore
 end
 
+#Compute probability of getting score r summing aggregating over innings
 function h_parallel(i::Int, b_prime::Int, r::Int)::Float64
     key = (i, b_prime, r)
     if haskey(h_memo, key)
@@ -137,7 +140,7 @@ function h_parallel(i::Int, b_prime::Int, r::Int)::Float64
         result = g(Batter(1), b_prime, r)
     else
         result = 0.0
-        for b in 1:9
+        for b in b_range
             local sum_b = 0.0
             for r_prime in 0:r
                 sum_b += h_parallel(i-1, b, r_prime) * g(Next(b), b_prime, r-r_prime)
@@ -150,11 +153,10 @@ function h_parallel(i::Int, b_prime::Int, r::Int)::Float64
     return result
 end
 
-probmemo = Dict{Int, Float64}()
+#Compute overall probability of reaching state r in one game
 function prob(r::Int, INGS::Int)::Float64
-
     sum = 0.0
-    for b in 1:9
+    for b in b_range
         sum += h_parallel(INGS,b,r)
     end
     println("p(", r, ") is ", sum)
@@ -162,7 +164,7 @@ function prob(r::Int, INGS::Int)::Float64
     return sum
 end
 
-
+#Compute expected runs or expected score of one game
 function expectedRuns(rmax::Int, INGS::Int)::Float64
     sum = Atomic{Float64}(0.0)  # Use an atomic variable for thread-safe summation
 
@@ -173,16 +175,15 @@ function expectedRuns(rmax::Int, INGS::Int)::Float64
     return sum[]
 end
 
-#populate all entries in memo: b can be 1:9, j can be 1:27, outs can be 0:3, b1,b2,b3 can all be 0/1
+#Populate all entries in memo: b can be 1:9, j can be 1:27, outs can be 0:3, b1,b2,b3 can all be 0/1
 function populateMemo()
-    for b in 1:9
-        #println(b, " b for populateMemo")
-        for j in 1:27 ###Change Parameters after test
-            for outs in -1:3
-                for b1 in 0:1
-                    for b2 in 0:1
-                        for b3 in 0:1
-                            f(State(b,j,outs,b1,b2,b3))
+    for b in b_range
+        for j in j_range
+            for outs in outs_range
+                for base1 in bases_range
+                    for base2 in bases_range
+                        for base3 in bases_range
+                            f(State(b,j,outs,base1,base2,base3))
                         end
                     end
                 end
@@ -230,11 +231,11 @@ end
 function check_probabilities(playersData)
     for i in 1:nrow(playersData)
         row = playersData[i, :]
-        probability_sum = sum(row[2:8])  # Adjust the indices as per your data structure
+        probability_sum = sum(row[2:8]) 
         if probability_sum < 0.99 || probability_sum > 1.01  # Checking if sum ~= 1
             println("Error: Probabilities in row ", i, " do not sum to 1. Sum is: ", probability_sum)
         else
-            print()#println("Row ", i, ": ", "Good")
+            print()
         end
     end
     println("Player batting probabilities all sum to 1")
@@ -251,7 +252,9 @@ function try_read()
         return data_csv
     end
 end
+
 playersData = CSV.read("redsox_2023.csv", DataFrame)
+
 # Read probabilities and check that each player's stats sum to 1
 if length(ARGS) <1
     println("No filename specified, defaulting to redsox_2023.csv")
@@ -260,9 +263,7 @@ else
     playersData = try_read()
 end
 
-
 check_probabilities(playersData)
-
 
 function parse_args(args)
     try
@@ -274,13 +275,11 @@ function parse_args(args)
     end
 end
 
-# Currently, batting order (lineup) is just randomly initialized
+# Randomly initialize batting order (lineup) if none given
 if length(ARGS) <2 || length(ARGS) != 10
     println("batting lineup initialized to random. No lineup given") 
     lineup = randperm(9)
     println("lineup", lineup)
-
-
 elseif length(ARGS) == 10
     lineup = parse_args(ARGS[2:10])
     println("accepted batting lineup", lineup)
@@ -290,7 +289,7 @@ function Batter(idx::Int)::Int
     return lineup[idx]
 end
 
-# Begin main code -- populate memo, etc. 
+# Begin main code -- populate memo, compute expected runs. 
 println("populating memo")
 @time populateMemo()
 println("calculating expected runs")
