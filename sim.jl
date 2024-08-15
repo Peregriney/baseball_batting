@@ -289,7 +289,7 @@ if length(ARGS) <2 || length(ARGS) != 11
     println("Lineup ", lineup)
 
 elseif length(ARGS) == 11
-    numSims = parse_single(Int64, ARGS[2])
+    numSims = parse_single(ARGS[2])
     lineup = parse_args(ARGS[3:10])
     println("Accepted batting lineup ", lineup)
 end
@@ -341,7 +341,7 @@ function get_sim(lineup, num_games)
 end
 
 
-scores, avg = get_sim(lineup, 10000)
+scores, avg = get_sim(lineup, numSims)
 
 
 function count_occurrences(scores::Vector{Int})
@@ -375,7 +375,7 @@ function sorted_values_by_keys(dict::Dict{Int, Float64})
     sorted_keys = sort(collect(keys(dict)))
     
     # Get the values sorted by their keys
-    sorted_values = [dict[key]* 10000 for key in sorted_keys]
+    sorted_values = [dict[key]* numSims for key in sorted_keys]
     
     return sorted_values
 end
@@ -389,5 +389,5 @@ savefig("histogram-comparison.png")
 sliced_longer_array = sorted_values[1:n]
 difference = sliced_longer_array .- count_array
 # Plot the difference by index
-plot(difference, label="Difference", xlabel="Index", ylabel="Difference (DP P(r)*10000 - Sim count)", title="Element-wise Difference of DP - Sim", xticks = 0:1:n)
+plot(difference, label="Difference", xlabel="Index", ylabel="Difference (DP P(r) * Sim total - Sim r count)", title="Element-wise Difference of DP - Sim", xticks = 0:1:n)
 savefig("dpsim-difference.png")
