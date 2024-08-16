@@ -365,7 +365,7 @@ function count_occurrences(scores::Vector{Int})
     return result
 end
 
-sim_count_array = count_occurrences(sim_scores)
+sim_count_array = count_occurrences(sim_scores) ./ numSims
 
 
 function sorted_values_by_keys(dict::Dict{Int, Float64})
