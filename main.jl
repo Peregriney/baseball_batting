@@ -16,11 +16,19 @@ h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
 g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
 probmemo = Dict{Int, Float64}()
 
-#Define variable ranges
-b_range = 1:9
-j_range = 1:27
-outs_range = -1:3
-bases_range = 0:1
+#Define variable ranges from config
+b_range = config["dp"]["b_range"]
+j_range = config["dp"]["j_range"]
+outs_range = config["dp"]["outs_range"]
+bases_range = config["dp"]["bases_range"]
+NUM_BATTERS = config["dp"]["NUM_BATTERS"]
+DEFAULT_STR = config["dp"]["DEFAULT_STR"]
+NUM_INNINGS = config["dp"]["NUM_INNINGS"]
+MAX_R = config["dp"]["MAX_R"]
+PROB_EXPORT_STR = config["dp"]["PROB_EXPORT_STR"]
+F_EXPORT_STR = config["dp"]["F_EXPORT_STR"]
+G_EXPORT_STR = config["dp"]["G_EXPORT_STR"]
+H_EXPORT_STR = config["dp"]["H_EXPORT_STR"]
 
 # f performs memoized recursion for probability of reaching states in an inning
 function f(state::State)::Float64
@@ -225,12 +233,12 @@ end
 
 # Define the function for the next batter
 function Next(b::Int)::Int
-    return (b % 9) + 1
+    return (b % NUM_BATTERS) + 1
 end
 
 # Define the function for the j-th batter in an inning
 function Batters(b::Int, j::Int)::Int
-    return (b + j - 1) % 9 + 1
+    return (b + j - 1) % NUM_BATTERS + 1
 end
 
 ## Function to check if the probabilities in each row sum to 1
@@ -254,17 +262,17 @@ function try_read()
         return data_csv
     catch e
         println("Error: first argument must be CSV file, could not read. Format as [pathname.csv] to command-line. Defaulting to redsox_2023.csv")
-        data_csv = CSV.read("redsox_2023.csv",DataFrame)
+        data_csv = CSV.read(DEFAULT_STR,DataFrame)
         return data_csv
     end
 end
 
-playersData = CSV.read("redsox_2023.csv", DataFrame)
+playersData = CSV.read(DEFAULT_STR, DataFrame)
 
 # Read probabilities and check that each player's stats sum to 1
 if length(ARGS) <1
     println("No filename specified, defaulting to redsox_2023.csv")
-    playersData = CSV.read("redsox_2023.csv", DataFrame)
+    playersData = CSV.read(DEFAULT_STR, DataFrame)
 else
     playersData = try_read()
 end
@@ -276,18 +284,18 @@ function parse_args(args)
         return [parse(Int64, arg) for arg in args]
     catch e
         println("Error: All arguments must be numbers. Setting random lineup.")
-        lineup = randperm(9)
+        lineup = randperm(NUM_BATTERS)
         println("lineup", lineup)
     end
 end
 
 # Randomly initialize batting order (lineup) if none given
-if length(ARGS) <2 || length(ARGS) != 10
+if length(ARGS) <2 || length(ARGS) != NUM_BATTERS+1
     println("batting lineup initialized to random. No lineup given") 
-    lineup = randperm(9)
+    lineup = randperm(NUM_BATTERS)
     println("lineup", lineup)
-elseif length(ARGS) == 10
-    lineup = parse_args(ARGS[2:10])
+elseif length(ARGS) == NUM_BATTERS + 1
+    lineup = parse_args(ARGS[2:NUM_BATTERS+1])
     println("accepted batting lineup", lineup)
 end
 
@@ -300,13 +308,13 @@ println("populating memo")
 @time populateMemo()
 println("calculating expected runs")
 
-@time e = expectedRuns(40,9)
+@time e = expectedRuns(MAX_R,NUM_INNINGS)
 println(e)
 
 # Convert the probmemo dictionary to a DataFrame
 df = DataFrame(r = keys(probmemo), probability = values(probmemo))
 # Save the DataFrame to a CSV file
-CSV.write("probmemo.csv", df)
+CSV.write(PROB_EXPORT_STR, df)
 
 
 hi_values = Int[]
@@ -341,10 +349,10 @@ g_df = DataFrame(b = gb_values,
                      value = g_values)
 
 # Save h_memo DataFrame to CSV
-CSV.write("hmemo.csv", h_df)
+CSV.write(H_EXPORT_STR, h_df)
 
 # Save g_memo DataFrame to CSV
-CSV.write("gmemo.csv", g_df)
+CSV.write(G_EXPORT_STR, g_df)
 
 
 # Initialize arrays to store the data
@@ -377,4 +385,4 @@ memo_df = DataFrame(b = b_values,
                      value = value_values)
 
 # Save the DataFrame to a CSV file
-CSV.write("fmemo.csv", memo_df)
+CSV.write(F_EXPORT_STR, memo_df)
