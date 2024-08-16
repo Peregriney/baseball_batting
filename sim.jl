@@ -5,9 +5,25 @@ using Random
 using DataFrames, CSV
 using StatsBase
 using Permutations
-using Plots
+using Plots, TOML
 
-probmemo = CSV.read("probmemo.csv", DataFrame)
+config = TOML.parsefile("config.toml")
+
+#Define variable ranges from config
+b_range = config["dp"]["b_range"]
+j_range = config["dp"]["j_range"]
+outs_range = config["dp"]["outs_range"]
+bases_range = config["dp"]["bases_range"]
+NUM_BATTERS = config["dp"]["NUM_BATTERS"]
+DEFAULT_STR = config["dp"]["DEFAULT_STR"]
+NUM_INNINGS = config["dp"]["NUM_INNINGS"]
+MAX_R = config["dp"]["MAX_R"]
+DEFAULT_SIMS = config["dp"]["DEFAULT_SIMS"]
+PROB_EXPORT_STR = config["dp"]["PROB_EXPORT_STR"]
+PLOTHIST_EXPORT_STR = config["dp"]["PLOTHIST_EXPORT_STR"]
+PLOTDIFF_EXPORT_STR = config["dp"]["PLOTDIFF_EXPORT_STR"]
+
+probmemo = CSV.read(PROB_EXPORT_STR, DataFrame)
 
 keys_str = probmemo.r[1]
 values_str = probmemo.probability[1]
@@ -247,15 +263,15 @@ function try_read()
         return data_csv
     catch e
         println("Error: first argument must be CSV file, could not read. Format as [pathname.csv] to command-line. Defaulting to redsox_2023.csv")
-        data_csv = CSV.read("redsox_2023.csv",DataFrame)
+        data_csv = CSV.read(DEFAULT_STR,DataFrame)
         return data_csv
     end
 end
-playersData = CSV.read("redsox_2023.csv", DataFrame)
+playersData = CSV.read(DEFAULT_STR, DataFrame)
 # Read probabilities and check that each player's stats sum to 1
 if length(ARGS) <1
     println("No filename specified, defaulting to redsox_2023.csv")
-    playersData = CSV.read("redsox_2023.csv", DataFrame)
+    playersData = CSV.read(DEFAULT_STR, DataFrame)
 else
     playersData = try_read()
 end
@@ -265,7 +281,7 @@ function parse_args(args)
         return [parse(Int64, arg) for arg in args]
     catch e
         println("Error: All arguments must be numbers. Setting random lineup.")
-        lineup = randperm(9)
+        lineup = randperm(NUM_BATTERS)
         println("Lineup ", lineup)
     end
 end
@@ -279,17 +295,17 @@ function parse_single(arg)
 end
 
 
-numSims = 1000
-lineup = (1,2,3,4,5,6,7,8,9)
-if length(ARGS) <2 || length(ARGS) != 11
+numSims = DEFAULT_SIMS
+lineup = b_range
+if length(ARGS) <2 || length(ARGS) != NUM_BATTERS + 2
     println("Incorrect argument formatting. Defaulting to redsox_2023.csv, 1k simulated games, batting lineup initialized to random.") 
-    lineup = randperm(9)
-    playersData = CSV.read("redsox_2023.csv", DataFrame)
+    lineup = randperm(NUM_BATTERS)
+    playersData = CSV.read(DEFAULT_STR, DataFrame)
     println("Lineup ", lineup)
 
-elseif length(ARGS) == 11
+elseif length(ARGS) == NUM_BATTERS + 2
     numSims = parse_single(ARGS[2])
-    lineup = parse_args(ARGS[3:11])
+    lineup = parse_args(ARGS[3:NUM_BATTERS+2])
     println("Accepted batting lineup ", lineup)
 end
 
@@ -382,13 +398,13 @@ sorted_values = sorted_values_by_keys(probmemo)
 n = length(sim_count_array)
 
 plot(bar(collect(0:n-1),[sorted_values[1:n] sim_count_array ], label=["DP" "sim"], alpha=[1.0 0.5]),xlabel="Score (# of runs)", ylabel="Frequency (# of games)", title="Histogram for DP vs. Simulation", legend=true)
-savefig("histogram-comparison.png")
+savefig(PLOTHIST_EXPORT_STR)
 
 sliced_longer_array = sorted_values[1:n]
 difference = sliced_longer_array .- sim_count_array 
 # Plot the difference by index
 plot(difference .* 100, label="Difference", xlabel="Index", ylabel="Difference (DP P(r) % - Sim Pr(r) %)", title="Element-wise % Difference of DP - Sim", xticks = 0:1:n, ylims=(-5,5))
-savefig("dpsim-difference.png")
+savefig(PLOTDIFF_EXPORT_STR)
 
 
 
