@@ -1,4 +1,4 @@
-using CSV, DataFrames, Distributed, Base.Threads, Random
+using CSV, DataFrames, Distributed, Base.Threads, Random, TOML
 
 # Define the state space
 struct State
@@ -15,6 +15,8 @@ memo = Dict{State, Float64}()
 h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
 g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
 probmemo = Dict{Int, Float64}()
+
+config = TOML.parsefile("config.toml")
 
 #Define variable ranges from config
 b_range = config["dp"]["b_range"]
