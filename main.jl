@@ -137,7 +137,7 @@ function h_parallel(i::Int, b_prime::Int, r::Int)::Float64
     end
 
     if i == 1
-        result = g(Batter(1), b_prime, r)
+        result = g(1, b_prime, r)
     else
         result = 0.0
         for b in b_range
@@ -194,27 +194,33 @@ end
 
 # Define the functions for player statistics --> all of these need to retrieve from some array of values for each of the 9players
 function Single(i::Int)::Float64
-    return playersData[i,5]
+    bat = Batter(i)
+    return playersData[bat,5]
 end
 
 function Double(i::Int)::Float64
-    return playersData[i,6]
+    bat = Batter(i)
+    return playersData[bat,6]
 end
 
 function Triple(i::Int)::Float64
-    return playersData[i,7]
+    bat = Batter(i)
+    return playersData[bat,7]
 end
 
 function HomeRun(i::Int)::Float64
-    return playersData[i,8]
+    bat = Batter(i)
+    return playersData[bat,8]
 end
 
 function Walk(i::Int)::Float64
-    return playersData[i,4]
+    bat = Batter(i)
+    return playersData[bat,4]
 end
 
 function OutGet(i::Int)::Float64
-    return playersData[i,2] + playersData[i,3]
+    bat = Batter(i)
+    return playersData[bat,2] + playersData[bat,3]
 end
 
 # Define the function for the next batter
