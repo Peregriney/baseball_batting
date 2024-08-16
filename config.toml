@@ -1,12 +1,12 @@
-[simulation]
-b_range = 1:9
-j_range = 1:27
-outs_range = -1:3
-bases_range = 0:1
+[dp]
+b_range = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+j_range = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]
+outs_range = [-1, 0, 1, 2, 3]
+bases_range = [0,1]
 NUM_BATTERS = 9
-DEFAULT_STR = "redsox_2023.csv"
 NUM_INNINGS = 9
 MAX_R = 40
+DEFAULT_STR = "redsox_2023.csv"
 PROB_EXPORT_STR = "probmemo.csv"
 F_EXPORT_STR = "fmemo.csv"
 G_EXPORT_STR = "gmemo.csv"
