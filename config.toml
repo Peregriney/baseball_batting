@@ -6,8 +6,12 @@ bases_range = [0,1]
 NUM_BATTERS = 9
 NUM_INNINGS = 9
 MAX_R = 40
+DEFAULT_SIMS = 1000
 DEFAULT_STR = "redsox_2023.csv"
 PROB_EXPORT_STR = "probmemo.csv"
 F_EXPORT_STR = "fmemo.csv"
 G_EXPORT_STR = "gmemo.csv"
 H_EXPORT_STR = "hmemo.csv"
+PLOTHIST_EXPORT_STR = "histogram-comparison.png"
+PLOTDIFF_EXPORT_STR = "dpsim-differenc.png"
+
