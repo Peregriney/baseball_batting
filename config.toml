@@ -1,0 +1,13 @@
+[simulation]
+b_range = 1:9
+j_range = 1:27
+outs_range = -1:3
+bases_range = 0:1
+NUM_BATTERS = 9
+DEFAULT_STR = "redsox_2023.csv"
+NUM_INNINGS = 9
+MAX_R = 40
+PROB_EXPORT_STR = "probmemo.csv"
+F_EXPORT_STR = "fmemo.csv"
+G_EXPORT_STR = "gmemo.csv"
+H_EXPORT_STR = "hmemo.csv"
