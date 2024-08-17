@@ -523,6 +523,25 @@ println("DP: calculating expected runs")
 @time e = expectedRuns(MAX_R,NUM_INNINGS)
 println(e)
 
+runidxs = [key for key in keys(probmemo)]
+rprobs = [val for val in values(probmemo)]
+
+# Calculate the expected number (mean)
+expected_number = sum(runidxs[i] * rprobs[i] for i in 1:length(runidxs))
+
+# Calculate the variance and standard deviation
+mean_sq = sum((runidxs[i] ^ 2) * rprobs[i] for i in 1:length(runidxs))
+variance = mean_sq - expected_number^2
+std_dev = sqrt(variance)
+
+# Find minimum and maximum
+min_val = minimum(runidxs)
+max_val = maximum(runidxs)
+
+# Print results
+println("DP Expected Number (Mean): $expected_number")
+
+
 println()
 println("Simulation: running simulated games to generate distribution of runs")
 
