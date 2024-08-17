@@ -327,3 +327,15 @@ function count_occurrences(scores::Vector{Int})
 end
 
 sim_count_array = count_occurrences(sim_scores) ./ numSims
+
+# Create DataFrame with Metrics as Rows and DP & Simulated as Columns
+metrics = ["Expected Number (Mean)", "Standard Deviation", "Minimum", "Maximum"]
+simulated_values = [avg, stdev, minn, maxx]
+
+df = DataFrame(
+    Metric = metrics,
+    Simulated = simulated_values
+)
+
+println(df)
+println()
