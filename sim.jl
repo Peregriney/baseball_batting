@@ -23,45 +23,6 @@ PROB_EXPORT_STR = config["dp"]["PROB_EXPORT_STR"]
 PLOTHIST_EXPORT_STR = config["dp"]["PLOTHIST_EXPORT_STR"]
 PLOTDIFF_EXPORT_STR = config["dp"]["PLOTDIFF_EXPORT_STR"]
 
-probmemo = CSV.read(PROB_EXPORT_STR, DataFrame)
-
-keys_str = probmemo.r[1]
-values_str = probmemo.probability[1]
-# Function to parse the list of values from a string
-function parse_keys(values_str::String)::Vector{Int}
-    # Remove brackets and split by comma
-    values_str = strip(values_str, ['[', ']'])
-    elements = split(values_str, ",")
-    # Convert the split strings to integers
-    return parse.(Int, elements)
-end
-
-function parse_values(values_str::String)::Vector{Float64}
-    # Remove brackets and split by comma
-    values_str = strip(values_str, ['[', ']'])
-    elements = split(values_str, ",")
-    # Convert the split strings to integers
-    return parse.(Float64, elements)
-end
-
-r_keys = parse_keys(keys_str)
-r_probs = parse_values(values_str)
-probmemo = Dict(r_keys[i] => r_probs[i] for i in 1:length(r_keys))
-
-
-##DP summary statistics
-runidxs = [key for key in keys(probmemo)]
-rprobs = [val for val in values(probmemo)]
-# Calculate the expected number (mean)
-expected_number = sum(runidxs[i] * rprobs[i] for i in 1:length(runidxs))
-# Calculate the variance and standard deviation
-mean_sq = sum((runidxs[i] ^ 2) * rprobs[i] for i in 1:length(runidxs))
-variance = mean_sq - expected_number^2
-std_dev = sqrt(variance)
-# Find minimum and maximum
-min_val = minimum(runidxs)
-max_val = maximum(runidxs)
-
 # at_bat(index) : returns the outcome for a single player's at bat
 function at_bat(index)
     # Retrieve the player's data from the dataset using the index
@@ -311,22 +272,6 @@ end
 
 avg, stdev, maxx, minn = average_score(lineup, numSims)
 
-# Create DataFrame with Metrics as Rows and DP & Simulated as Columns
-metrics = ["Expected Number (Mean)", "Standard Deviation", "Minimum", "Maximum"]
-dp_values = [expected_number, std_dev, min_val, max_val]
-simulated_values = [avg, stdev, minn, maxx]
-
-df = DataFrame(
-    Metric = metrics,
-    DP = dp_values,
-    Simulated = simulated_values
-)
-
-# Display the DataFrame
-println("Comparison of DP vs. Simulated Summary Stats:")
-println(df)
-println()
-
 # average_score: Calculates the average score from simulating a number of games
 function get_sim(lineup, num_games)
     total_score = 0 # Sum of scores from all games
@@ -382,67 +327,3 @@ function count_occurrences(scores::Vector{Int})
 end
 
 sim_count_array = count_occurrences(sim_scores) ./ numSims
-
-
-function sorted_values_by_keys(dict::Dict{Int, Float64})
-    # Get the sorted keys
-    sorted_keys = sort(collect(keys(dict)))
-    
-    # Get the values sorted by their keys
-    sorted_values = [dict[key] for key in sorted_keys]
-    
-    return sorted_values
-end
-
-sorted_values = sorted_values_by_keys(probmemo)
-n = length(sim_count_array)
-
-plot(bar(collect(0:n-1),[sorted_values[1:n] sim_count_array ], label=["DP" "sim"], alpha=[1.0 0.5]),xlabel="Score (# of runs)", ylabel="Frequency (# of games)", title="Histogram for DP vs. Simulation", legend=true)
-savefig(PLOTHIST_EXPORT_STR)
-
-sliced_longer_array = sorted_values[1:n]
-difference = sliced_longer_array .- sim_count_array 
-# Plot the difference by index
-plot(difference .* 100, label="Difference", xlabel="Index", ylabel="Difference (DP P(r) % - Sim Pr(r) %)", title="Element-wise % Difference of DP - Sim", xticks = 0:1:n, ylims=(-5,5))
-savefig(PLOTDIFF_EXPORT_STR)
-
-
-
-sum_abs_diff = sum(abs.(difference))
-sum_squared_diff = sum(difference .^ 2)
-correlation = cor(sorted_values[1:n], sim_count_array )
-chi_square_stat = sum((difference .^ 2) ./ sorted_values[1:n])
-
-
-# Create DataFrame with Metrics as Rows and DP & Simulated as Columns
-metrics = ["Sum abs dif", "Sum sq dif", "Corr", "Chi-square"]
-met_vals = [sum_abs_diff, sum_squared_diff, correlation,chi_square_stat]
-
-df_metric = DataFrame(
-    Metric = metrics,
-    Value = met_vals,
-)
-
-# Display the DataFrame
-println("Comparison of DP vs. Simulated histograms:")
-println(df_metric)
-println()
-
-
-df_r = DataFrame(
-  R = collect(0:n-1),
-  Difference = difference .*100
-)
-println("Table of difference in Pr(r) (%) for DP - sim")
-println(df_r)
-println()
-
-
-df_rs = DataFrame(
-  R = collect(0:n-1),
-  DP = sorted_values[1:n].*100,
-  Sim = sim_count_array.*100
-)
-println("Table of computed Pr(r) (%) for DP and Sim")
-println(df_rs)
-println()
