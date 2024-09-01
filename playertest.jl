@@ -1,4 +1,4 @@
-using CSV, DataFrames, Distributed, Base.Threads, Random, TOML
+using CSV, DataFrames, Distributed, Base.Threads, Random, TOML, Combinatorics
 
 # Define the state space
 struct State
@@ -11,10 +11,10 @@ struct State
 end
 
 #Define memoization dictionaries
-memo = Dict{State, Float64}()
-h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
-g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
-probmemo = Dict{Int, Float64}()
+global memo = Dict{State, Float64}()
+global h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
+global g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
+global probmemo = Dict{Int, Float64}()
 
 config = TOML.parsefile("config.toml")
 
@@ -31,6 +31,8 @@ PROB_EXPORT_STR = config["dp"]["PROB_EXPORT_STR"]
 F_EXPORT_STR = config["dp"]["F_EXPORT_STR"]
 G_EXPORT_STR = config["dp"]["G_EXPORT_STR"]
 H_EXPORT_STR = config["dp"]["H_EXPORT_STR"]
+PERMUTATION_EXPORT_STR = config["dp"]["PERMUTATION_EXPORT_STR"]
+
 
 # f performs memoized recursion for probability of reaching states in an inning
 function f(state::State)::Float64
@@ -163,13 +165,14 @@ function h_parallel(i::Int, b_prime::Int, r::Int)::Float64
     return result
 end
 
+
 #Compute overall probability of reaching state r in one game
 function prob(r::Int, INGS::Int)::Float64
     sum = 0.0
     for b in b_range
         sum += h_parallel(INGS,b,r)
     end
-    println("p(", r, ") is ", sum)
+    #println("p(", r, ") is ", sum)
     probmemo[r] = sum
     return sum
 end
@@ -286,7 +289,7 @@ function parse_args(args)
         return [parse(Int64, arg) for arg in args]
     catch e
         println("Error: All arguments must be numbers. Setting random lineup.")
-        lineup = randperm(NUM_BATTERS)
+        global lineup = randperm(NUM_BATTERS)
         println("lineup", lineup)
     end
 end
@@ -294,114 +297,78 @@ end
 # Randomly initialize batting order (lineup) if none given
 if length(ARGS) <2 || length(ARGS) != NUM_BATTERS+1
     println("batting lineup initialized to random. No lineup given") 
-    lineup = randperm(NUM_BATTERS)
+    global lineup = randperm(NUM_BATTERS)
     println("lineup", lineup)
 elseif length(ARGS) == NUM_BATTERS + 1
-    lineup = parse_args(ARGS[2:NUM_BATTERS+1])
+    global lineup = parse_args(ARGS[2:NUM_BATTERS+1])
     println("accepted batting lineup", lineup)
 end
 
 function Batter(idx::Int)::Int
+    global lineup
     return lineup[idx]
 end
 
-# Begin main code -- populate memo, compute expected runs. 
-println("populating memo")
-@time populateMemo()
-println("calculating expected runs")
+function clearMemos()
+  global memo = Dict{State, Float64}()
+  global h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
+  global g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
+  global probmemo = Dict{Int, Float64}()
 
-"""
-skip = rand(1:4)
-println(skip)
-if skip >1
-  @time e = expectedRuns(MAX_R,NUM_INNINGS)
-  println(e)
-else
-  println("This run skips the last inning, based on a 25% chance")
-  @time e = expectedRuns(MAX_R,NUM_INNINGS-1)
-  println(e)
-end
-"""
-
-@time efull = expectedRuns(MAX_R,NUM_INNINGS)
-@time eearly = expectedRuns(MAX_R,NUM_INNINGS-1)
-
-println("efull is ", efull)
-println("eearly is ", eearly)
-println("Expected runs across all games is (.75*full game + .25*early end) = ", .25*eearly+.75*efull)
-
-# Convert the probmemo dictionary to a DataFrame
-df = DataFrame(r = keys(probmemo), probability = values(probmemo))
-# Save the DataFrame to a CSV file
-CSV.write(PROB_EXPORT_STR, df)
-
-
-hi_values = Int[]
-hbprime_values = Int[]
-hr_values = Int[]
-h_values = Float64[]
-for (key, value) in h_memo
-    push!(hi_values, key[1])
-    push!(hbprime_values, key[2])
-    push!(hr_values, key[3])
-    push!(h_values,value)
 end
 
-gb_values = Int[]
-gbprime_values = Int[]
-gr_values = Int[]
-g_values = Float64[]
-for (key, value) in g_memo
-    push!(gb_values, key[1])
-    push!(gbprime_values, key[2])
-    push!(gr_values, key[3])
-    push!(g_values,value)
+
+lineups = permutations(1:NUM_BATTERS)
+
+# Initialize file writing
+csv_file = PERMUTATION_EXPORT_STR
+#=
+open(csv_file, "w") do io
+    CSV.write(io, DataFrame(Lineup=String[], ExpectedRuns=Float64[]))
+end
+=#
+
+# Accumulate results in chunks
+global results = DataFrame(Lineup=String[], ExpectedRuns=Float64[])
+global count = 0
+CHUNK_SIZE = 100  # Define your chunk size
+
+# Loop through each permutation
+for lu in lineups
+    global lineup
+    lineup = lu
+    # Convert lineup to a string for CSV
+    lineup_str = join(map(x -> string(x), lu), ", ")
+    
+    # Clear memo arrays before each computation
+    clearMemos()
+    
+    println("Processing lineup: ", lineup_str)
+    
+    # Time and compute results
+    populateMemo()
+    efull = expectedRuns(MAX_R, NUM_INNINGS)
+    eearly = expectedRuns(MAX_R, NUM_INNINGS - 1)
+    e = 0.25 * eearly + 0.75 * efull
+    
+    # Store the results
+    global results
+    global count
+    push!(results, (Lineup=lineup_str, ExpectedRuns=e))
+    count += 1
+    
+    # Write to CSV every CHUNK_SIZE permutations
+    if count % CHUNK_SIZE == 0
+        println("Writing chunk to CSV...")
+        CSV.write(csv_file, results, append=true)
+        results = DataFrame(Lineup=String[], ExpectedRuns=Float64[])  # Reset results
+    end
 end
 
-h_df = DataFrame(i = hi_values,
-                    bprime = hbprime_values,
-                    r = hr_values,
-                    value = h_values)
-g_df = DataFrame(b = gb_values,
-                     bprime = gbprime_values,
-                     r = gr_values,
-                     value = g_values)
-
-# Save h_memo DataFrame to CSV
-CSV.write(H_EXPORT_STR, h_df)
-
-# Save g_memo DataFrame to CSV
-CSV.write(G_EXPORT_STR, g_df)
-
-
-# Initialize arrays to store the data
-b_values = Float64[]
-j_values = Float64[]
-outs_values = Int[]
-base1_values = Int[]
-base2_values = Int[]
-base3_values = Int[]
-value_values = Float64[]
-
-# Iterate through keys and values of the dictionary once
-for (key, value) in memo
-    push!(b_values, key.b)
-    push!(j_values, key.j)
-    push!(outs_values, key.outs)
-    push!(base1_values, key.base1)
-    push!(base2_values, key.base2)
-    push!(base3_values, key.base3)
-    push!(value_values, value)
+# Write any remaining results
+if !isempty(results)
+    println("Writing remaining results to CSV...")
+    CSV.write(csv_file, results, append=true)
 end
 
-# Create the DataFrame from the collected data
-memo_df = DataFrame(b = b_values,
-                     j = j_values,
-                     outs = outs_values,
-                     base1 = base1_values,
-                     base2 = base2_values,
-                     base3 = base3_values,
-                     value = value_values)
-
-# Save the DataFrame to a CSV file
-CSV.write(F_EXPORT_STR, memo_df)
+println("Results written to ", csv_file)
