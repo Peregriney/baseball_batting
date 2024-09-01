@@ -13,5 +13,6 @@ F_EXPORT_STR = "fmemo.csv"
 G_EXPORT_STR = "gmemo.csv"
 H_EXPORT_STR = "hmemo.csv"
 PLOTHIST_EXPORT_STR = "histogram-comparison.png"
-PLOTDIFF_EXPORT_STR = "dpsim-differenc.png"
+PLOTDIFF_EXPORT_STR = "dpsim-difference.png"
+PERMUTATION_EXPORT_STR = "lineup-results.csv"
 
