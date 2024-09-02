@@ -328,6 +328,15 @@ open(csv_file, "w") do io
 end
 =#
 
+# Read existing lineups from the CSV into a set
+function read_existing_lineups(filename)
+    df = CSV.read(filename, DataFrame)
+    return Set(df.Lineup)  # Convert the lineup column to a Set for quick lookup
+end
+
+# Read existing lineups from the CSV
+existing_lineups = read_existing_lineups(csv_file)
+
 # Accumulate results in chunks
 global results = DataFrame(Lineup=String[], ExpectedRuns=Float64[])
 global count = 0
@@ -339,6 +348,12 @@ for lu in lineups
     lineup = lu
     # Convert lineup to a string for CSV
     lineup_str = join(map(x -> string(x), lu), ", ")
+    
+    # Skip if the lineup is already in the CSV
+    if lineup_str in existing_lineups
+        println("Skipping already processed lineup: ", lineup_str)
+        continue
+    end
     
     # Clear memo arrays before each computation
     clearMemos()
