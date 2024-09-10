@@ -370,6 +370,7 @@ for i in 1:nrow(ludf)
       ludf.score2[i] = e
     end
 end
+println(ludf.score2)
 CSV.write("outputs_with_score2.csv", ludf)
 
 
