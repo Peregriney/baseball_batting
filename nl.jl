@@ -358,18 +358,21 @@ seenLineups = Dict{String, Float64}()
 for i in 1:nrow(ludf)
     row = ludf[i,:]
     lineup_str = row.Lineup
+    lineup_str = strip(lineup_str, ['[', ']'])
+
 
     global lineup
 
     if haskey(seenLineups, lineup_str)
         # Use the cached value
-        lineup = seenLineups[lineup_str]
+        lineupval = seenLineups[lineup_str]
+        ludf.score2[i] = lineupval
+        println("Lineup already seen")
     else
     
         # Parse the Lineup string manually
         try
-            # Remove surrounding brackets
-            lineup_str = strip(lineup_str, ['[', ']'])
+
             if occursin("100",lineup_str)
                 println("Replacing pitcher with DH")
             end
