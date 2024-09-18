@@ -388,22 +388,24 @@ for i in 1:nrow(ludf)
             continue
         end
         
-    end
-
-    print(lineup)
-    if length(lineup) == 9
-      # Clear memo arrays before each computation
-      clearMemos()
-      
-      println("Processing lineup: ", lineup_str)
-      
-      # Time and compute results
-      populateMemo()
-      efull = expectedRuns(MAX_R, NUM_INNINGS)
-      eearly = expectedRuns(MAX_R, NUM_INNINGS - 1)
-      e = 0.25 * eearly + 0.75 * efull
-     
-      ludf.score2[i] = e
+        
+    
+        print(lineup)
+        if length(lineup) == 9
+          # Clear memo arrays before each computation
+          clearMemos()
+          
+          println("Processing lineup: ", lineup_str)
+          
+          # Time and compute results
+          populateMemo()
+          efull = expectedRuns(MAX_R, NUM_INNINGS)
+          eearly = expectedRuns(MAX_R, NUM_INNINGS - 1)
+          e = 0.25 * eearly + 0.75 * efull
+         
+          ludf.score2[i] = e
+          seenLineups[lineup_str] = e
+        end
     end
 end
 println(ludf.score2)
