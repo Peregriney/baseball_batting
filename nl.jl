@@ -353,7 +353,7 @@ end
 ludf = CSV.read("output.csv", DataFrame)
 ludf.score2 = Vector{Float64}(undef, nrow(ludf))  # Initialize with `undef` values
 
-seenLineups = Dict{String, SomeValueType}()
+seenLineups = Dict{String, Float64}()
 # Loop through each permutation
 for i in 1:nrow(ludf)
     row = ludf[i,:]
