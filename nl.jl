@@ -370,8 +370,8 @@ for i in 1:nrow(ludf)
         try
             # Remove surrounding brackets
             lineup_str = strip(lineup_str, ['[', ']'])
-            if "100" in lineup_str
-                print("Replacing pitcher with DH")
+            if occursin("100",lineup_str)
+                println("Replacing pitcher with DH")
             end
             
             # Remove single quotes and split by comma
