@@ -353,6 +353,7 @@ end
 ludf = CSV.read("output.csv", DataFrame)
 ludf.score2 = Vector{Float64}(undef, nrow(ludf))  # Initialize with `undef` values
 
+seenLineups = Dict{String, SomeValueType}()
 # Loop through each permutation
 for i in 1:nrow(ludf)
     row = ludf[i,:]
@@ -360,25 +361,33 @@ for i in 1:nrow(ludf)
 
     global lineup
 
-    # Parse the Lineup string manually
-    try
-        # Remove surrounding brackets
-        lineup_str = strip(lineup_str, ['[', ']'])
-        if "100" in lineup_str
-            print("Replacing pitcher with DH")
+    if haskey(seenLineups, lineup_str)
+        # Use the cached value
+        lineup = seenLineups[lineup_str]
+    else
+    
+        # Parse the Lineup string manually
+        try
+            # Remove surrounding brackets
+            lineup_str = strip(lineup_str, ['[', ']'])
+            if "100" in lineup_str
+                print("Replacing pitcher with DH")
+            end
+            
+            # Remove single quotes and split by comma
+            elements = split(replace(lineup_str, "'" => ""))
+            elements = [replace(el, "," => "") for el in elements]
+    
+            # Remove any extra spaces and convert to integers
+            lineup = [parse(Int, strip(el)) for el in elements]
+            
+            
+        catch e
+            println("Error parsing lineup string: ", lineup_str)
+            println("Error message: ", e)
+            continue
+        end
         
-        # Remove single quotes and split by comma
-        elements = split(replace(lineup_str, "'" => ""))
-        elements = [replace(el, "," => "") for el in elements]
-
-        # Remove any extra spaces and convert to integers
-        lineup = [parse(Int, strip(el)) for el in elements]
-        
-        
-    catch e
-        println("Error parsing lineup string: ", lineup_str)
-        println("Error message: ", e)
-        continue
     end
 
     print(lineup)
