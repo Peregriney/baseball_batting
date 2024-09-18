@@ -329,48 +329,56 @@ end
 ludf = CSV.read("output.csv", DataFrame)
 ludf.score2 = Vector{Float64}(undef, nrow(ludf))  # Initialize with `undef` values
 
+seenLineups = Dict{String, Float64}()
+
 # Loop through each permutation
 for i in 1:nrow(ludf)
     row = ludf[i,:]
     lineup_str = row.Lineup
 
     global lineup
+    lineup_str = strip(lineup_str, ['[', ']'])
 
-    # Parse the Lineup string manually
-    try
-        # Remove surrounding brackets
-        lineup_str = strip(lineup_str, ['[', ']'])
+    if haskey(seenLineups, lineup_str)
+        # Use the cached value
+        lineupval = seenLineups[lineup_str]
+        ludf.score2[i] = lineupval
+        println("Lineup already seen")
+    else
         
-        # Remove single quotes and split by comma
-        elements = split(replace(lineup_str, "'" => ""))
-        elements = [replace(el, "," => "") for el in elements]
+        # Parse the Lineup string manually
+        try
+            
+            # Remove single quotes and split by comma
+            elements = split(replace(lineup_str, "'" => ""))
+            elements = [replace(el, "," => "") for el in elements]
 
-        # Remove any extra spaces and convert to integers
-        lineup = [parse(Int, strip(el)) for el in elements]
+            # Remove any extra spaces and convert to integers
+            lineup = [parse(Int, strip(el)) for el in elements]
+            
+        catch e
+            println("Error parsing lineup string: ", lineup_str)
+            println("Error message: ", e)
+            continue
+        end
+
+        print(lineup)
+        if length(lineup) == 9
+          # Clear memo arrays before each computation
+          clearMemos()
+          
+          println("Processing lineup: ", lineup_str)
+          
+          # Time and compute results
+          populateMemo()
+          efull = expectedRuns(MAX_R, NUM_INNINGS)
+          eearly = expectedRuns(MAX_R, NUM_INNINGS - 1)
+          e = 0.25 * eearly + 0.75 * efull
         
-    catch e
-        println("Error parsing lineup string: ", lineup_str)
-        println("Error message: ", e)
-        continue
-    end
-
-    print(lineup)
-    if length(lineup) == 9
-      # Clear memo arrays before each computation
-      clearMemos()
-      
-      println("Processing lineup: ", lineup_str)
-      
-      # Time and compute results
-      populateMemo()
-      efull = expectedRuns(MAX_R, NUM_INNINGS)
-      eearly = expectedRuns(MAX_R, NUM_INNINGS - 1)
-      e = 0.25 * eearly + 0.75 * efull
-     
-      ludf.score2[i] = e
+          ludf.score2[i] = e
+          seenLineups[lineup_str] = e
+        end
     end
 end
 println(ludf.score2)
 CSV.write("outputs_with_score2.csv", ludf)
-
-
