@@ -15,4 +15,4 @@ H_EXPORT_STR = "hmemo.csv"
 PLOTHIST_EXPORT_STR = "histogram-comparison.png"
 PLOTDIFF_EXPORT_STR = "dpsim-difference.png"
 PERMUTATION_EXPORT_STR = "lineup-results.csv"
-
+TOP_N = 15
