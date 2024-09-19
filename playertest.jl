@@ -32,6 +32,7 @@ F_EXPORT_STR = config["dp"]["F_EXPORT_STR"]
 G_EXPORT_STR = config["dp"]["G_EXPORT_STR"]
 H_EXPORT_STR = config["dp"]["H_EXPORT_STR"]
 PERMUTATION_EXPORT_STR = config["dp"]["PERMUTATION_EXPORT_STR"]
+TOP_N = config["dp"]["TOP_N"]
 
 
 # f performs memoized recursion for probability of reaching states in an inning
@@ -318,7 +319,11 @@ function clearMemos()
 end
 
 
-lineups = permutations(1:NUM_BATTERS)
+#lineups = permutations(1:NUM_BATTERS)
+
+combinations = combinations(1:TOP_N, NUM_BATTERS)
+lineups = [permutations(comb) for comb in combinations]
+lineups = vcat(lineups...)
 
 # Initialize file writing
 csv_file = PERMUTATION_EXPORT_STR
@@ -340,8 +345,9 @@ existing_lineups = read_existing_lineups(csv_file)
 # Accumulate results in chunks
 global results = DataFrame(Lineup=String[], ExpectedRuns=Float64[])
 global count = 0
-CHUNK_SIZE = 100  # Define your chunk size
+CHUNK_SIZE = 25  # Define your chunk size
 
+lineups = shuffle(collect(lineups))
 # Loop through each permutation
 for lu in lineups
     global lineup
