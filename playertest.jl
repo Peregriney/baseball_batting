@@ -321,9 +321,18 @@ end
 
 #lineups = permutations(1:NUM_BATTERS)
 
-combinations = combinations(1:TOP_N, NUM_BATTERS)
-lineups = [permutations(comb) for comb in combinations]
-lineups = vcat(lineups...)
+combs = combinations(1:TOP_N, NUM_BATTERS)
+num_random_permutations = 10
+lineups = []
+for comb in combs
+    # Generate random permutations for the current combination
+    random_permutations = [randperm(length(comb)) for _ in 1:num_random_permutations]
+    
+    # Store each random permutation in the lineups
+    for perm in random_permutations
+        push!(lineups, comb[perm])  # Use the random permutation to index into the combination
+    end
+end
 
 # Initialize file writing
 csv_file = PERMUTATION_EXPORT_STR
