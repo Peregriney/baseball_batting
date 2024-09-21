@@ -208,32 +208,62 @@ end
 # Define the functions for player statistics --> all of these need to retrieve from some array of values for each of the 9players
 function Single(i::Int)::Float64
     bat = Batter(i)
-    return playersData[bat,5]
+    if i == player && der == "1B"
+      return playersData1B[bat,5]
+    else
+      return playersData[bat,5]
+    end   
 end
 
 function Double(i::Int)::Float64
     bat = Batter(i)
-    return playersData[bat,6]
+    global player
+    global der
+    if i == player && der == "2B"
+      return playersData2B[bat,6]
+    else
+      return playersData[bat,6]
+    end   
 end
 
 function Triple(i::Int)::Float64
     bat = Batter(i)
-    return playersData[bat,7]
+    global player
+    if i == player && der == "3B"
+      return playersData3B[bat,7]
+    else
+      return playersData[bat,7]
+    end   
 end
 
 function HomeRun(i::Int)::Float64
     bat = Batter(i)
-    return playersData[bat,8]
+    global player
+    if i == player && der == "HR"
+      return playersDataHR[bat,8]
+    else
+      return playersData[bat,8]
+    end 
 end
 
 function Walk(i::Int)::Float64
     bat = Batter(i)
-    return playersData[bat,4]
+    global player
+    if i == player && der == "BB"
+      return playersDataBB[bat,4]
+    else
+      return playersData[bat,4]
+    end
 end
 
 function OutGet(i::Int)::Float64
     bat = Batter(i)
-    return playersData[bat,2] + playersData[bat,3]
+    global player
+    if i == player
+      return playersDataOut[bat,2] + playersDataOut[bat,3]
+    else
+      return playersData[bat,2] + playersData[bat,3]
+    end
 end
 
 # Define the function for the next batter
@@ -272,8 +302,8 @@ function try_read()
     end
 end
 
-playersData = CSV.read(DEFAULT_STR, DataFrame)
 
+playersData = CSV.read(DEFAULT_STR, DataFrame)
 # Read probabilities and check that each player's stats sum to 1
 if length(ARGS) <1
     println("No filename specified, defaulting to redsox_2023.csv")
@@ -293,16 +323,33 @@ function parse_args(args)
 end
 
 # Randomly initialize batting order (lineup) if none given
-if length(ARGS) <2 || length(ARGS) != NUM_BATTERS+2
+if length(ARGS) <2 || length(ARGS) != NUM_BATTERS+3
     println("batting lineup initialized to random. No lineup given") 
     global lineup = randperm(NUM_BATTERS)
     println("lineup", lineup)
-elseif length(ARGS) == NUM_BATTERS + 2
+elseif length(ARGS) == NUM_BATTERS + 3
     global lineup = parse_args(ARGS[2:NUM_BATTERS+1])
     println("accepted batting lineup", lineup)
     global player = parse(Int64,ARGS[NUM_BATTERS+2])
     println("player derivatives for: ", player)
+    global der = ARGS[NUM_BATTERS+3]
+    println("Derivative: ", der)
 end
+
+global der
+
+if der == "H"
+  playersData1B = CSV.read("br-playerstats-H.csv", DataFrame)
+elseif der == "2B"
+  playersData2B = CSV.read("br-playerstats-2B.csv", DataFrame)
+elseif der == "3B"
+  playersData3B = CSV.read("br-playerstats-3B.csv", DataFrame)
+elseif der == "HR"
+  playersDataHR = CSV.read("br-playerstats-HR.csv", DataFrame)
+elseif der == "BB"
+  playersDataBB = CSV.read("br-playerstats-BB.csv", DataFrame)
+
+playersDataOut = CSV.read("br-playerstats-SO.csv", DataFrame)
 
 function Batter(idx::Int)::Int
 
@@ -340,6 +387,7 @@ for i in 1:nrow(ludf)
 
     global lineup
     global player
+    global der
     lineup_str = strip(lineup_str, ['[', ']'])
 
     if haskey(seenLineups, lineup_str)
@@ -367,7 +415,7 @@ for i in 1:nrow(ludf)
 
         print(lineup)
         if length(lineup) == 9
-          if player in lineup
+          
               # Clear memo arrays before each computation
               clearMemos()
               
@@ -381,10 +429,7 @@ for i in 1:nrow(ludf)
             
               ludf.score2[i] = e
               seenLineups[lineup_str] = e
-          else
-              ludf.score2[i] = -1
-              seenLineups[lineup_str] = -1
-          end
+          
         end
     end
 end
