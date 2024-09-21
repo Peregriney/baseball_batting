@@ -348,6 +348,7 @@ elseif der == "HR"
   playersDataHR = CSV.read("br-playerstats-HR.csv", DataFrame)
 elseif der == "BB"
   playersDataBB = CSV.read("br-playerstats-BB.csv", DataFrame)
+end
 
 playersDataOut = CSV.read("br-playerstats-SO.csv", DataFrame)
 
