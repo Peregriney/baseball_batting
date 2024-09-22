@@ -162,7 +162,7 @@ function triple_bases(bases::Vector{Int64}, player, rs, rbi)
     bases[2] = 0
     bases[1] = 0
 
-    return bases, rs, rbi
+    return bases
 end
 
 # HR_bases: Function to update the bases when a player hits a home run (HR)
@@ -187,7 +187,7 @@ function HR_bases(bases::Vector{Int64}, player, rs, rbi)
     bases[2] = 0
     bases[1] = 0
 
-    return bases, rs, rbi
+    return bases
 end
 
 ## game_outcome(lineup) : returns the number of runs scored from a given lineup, simulating a game
@@ -269,8 +269,8 @@ function average_score(lineup, num_games)
     player7rbi = 0
     player8rbi = 0
     player9rbi = 0
-    player_rss = zeros(Int64, 9)
-    player_rbis = zeros(Int64, 9)
+    player_rss = zeros(Float64, 9)
+    player_rbis = zeros(Float64, 9)
 
     # Simulate each game and update scoring statistics
     for game in 1:num_games
@@ -292,7 +292,7 @@ function average_score(lineup, num_games)
 
         rbi = game_outcome(lineup)[4]
         for n in 1:9
-          player_rbi[n] += rbi[n]
+          player_rbis[n] += rbi[n]
         end
     end
 
