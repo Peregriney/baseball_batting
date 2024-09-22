@@ -208,7 +208,7 @@ end
 # Define the functions for player statistics --> all of these need to retrieve from some array of values for each of the 9players
 function Single(i::Int)::Float64
     bat = Batter(i)
-    if i == player && der == "1B"
+    if i == player && der == "H"
       return playersData1B[bat,5]
     else
       return playersData[bat,5]
