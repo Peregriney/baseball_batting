@@ -162,7 +162,7 @@ function triple_bases(bases::Vector{Int64}, player, rs, rbi)
     bases[2] = 0
     bases[1] = 0
 
-    return bases
+    return bases#, rs, rbi
 end
 
 # HR_bases: Function to update the bases when a player hits a home run (HR)
@@ -187,7 +187,7 @@ function HR_bases(bases::Vector{Int64}, player, rs, rbi)
     bases[2] = 0
     bases[1] = 0
 
-    return bases
+    return bases#, rs, rbi
 end
 
 ## game_outcome(lineup) : returns the number of runs scored from a given lineup, simulating a game
@@ -364,9 +364,6 @@ elseif length(ARGS) == NUM_BATTERS + 2
     println("Accepted batting lineup ", lineup)
 end
 
-avg, vari, stdev, maxx, minn, avg_rs, avg_rbi = average_score(lineup, numSims)
-println(avg, " ", vari," ",  stdev," ",  maxx," ",  minn," ",  avg_rs," ",  avg_rbi)
-
 # average_score: Calculates the average score from simulating a number of games
 function get_sim(lineup, num_games)
     total_score = 0 # Sum of scores from all games
@@ -420,3 +417,142 @@ function count_occurrences(scores::Vector{Int})
     
     return result
 end
+
+function clearMemos()
+  global memo = Dict{State, Float64}()
+  global h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
+  global g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
+  global probmemo = Dict{Int, Float64}()
+
+end
+
+
+# Read existing lineups from the CSV into a set
+function read_existing_lineups(filename)
+    df = CSV.read(filename, DataFrame)
+    return Set(df.Lineup)  # Convert the lineup column to a Set for quick lookup
+end
+
+ludf = CSV.read("output.csv", DataFrame)
+ludf.score2 = Vector{Float64}(undef, nrow(ludf))  # Initialize with `undef` values
+ludf.var = Vector{Float64}(undef, nrow(ludf))
+ludf.stdev = Vector{Float64}(undef, nrow(ludf))
+ludf.maxval = Vector{Float64}(undef, nrow(ludf))
+ludf.minval = Vector{Float64}(undef, nrow(ludf))
+
+ludf.RSp1 = Vector{Float64}(undef, nrow(ludf))
+ludf.RSp2 = Vector{Float64}(undef, nrow(ludf))
+ludf.RSp3 = Vector{Float64}(undef, nrow(ludf))
+ludf.RSp4 = Vector{Float64}(undef, nrow(ludf))
+ludf.RSp5 = Vector{Float64}(undef, nrow(ludf))
+ludf.RSp6 = Vector{Float64}(undef, nrow(ludf))
+ludf.RSp7 = Vector{Float64}(undef, nrow(ludf))
+ludf.RSp8 = Vector{Float64}(undef, nrow(ludf))
+ludf.RSp9 = Vector{Float64}(undef, nrow(ludf))
+
+ludf.RBIp1 = Vector{Float64}(undef, nrow(ludf))
+ludf.RBIp2 = Vector{Float64}(undef, nrow(ludf))
+ludf.RBIp3 = Vector{Float64}(undef, nrow(ludf))
+ludf.RBIp4 = Vector{Float64}(undef, nrow(ludf))
+ludf.RBIp5 = Vector{Float64}(undef, nrow(ludf))
+ludf.RBIp6 = Vector{Float64}(undef, nrow(ludf))
+ludf.RBIp7 = Vector{Float64}(undef, nrow(ludf))
+ludf.RBIp8 = Vector{Float64}(undef, nrow(ludf))
+ludf.RBIp9 = Vector{Float64}(undef, nrow(ludf))
+
+seenLineups = Dict{String, Float64}()
+numSims = 50000
+println("Number of simulations per game: ", numSims)
+
+for i in 1:nrow(ludf)
+    row = ludf[i,:]
+    lineup_str = row.Lineup
+
+    global lineup
+    global player
+    global der
+    lineup_str = strip(lineup_str, ['[', ']'])
+
+    if haskey(seenLineups, lineup_str)
+        # Use the cached value
+        avg, vari, stdev, maxx, minn, avg_rs, avg_rbi = seenLineups[lineup_str]
+        ludf.score2[i] = avg
+        ludf.var[i] = vari
+        ludf.stdev[i] = stdev
+        ludf.maxval[i] = maxx
+        ludf.minval[i] = minn
+        ludf.RSp1 = avg_rs[1]
+        ludf.RSp2 = avg_rs[2]
+        ludf.RSp3 = avg_rs[3]
+        ludf.RSp4 = avg_rs[4]
+        ludf.RSp5 = avg_rs[5]
+        ludf.RSp6 = avg_rs[6]
+        ludf.RSp7 = avg_rs[7]
+        ludf.RSp8 = avg_rs[8]
+        ludf.RSp9 = avg_rs[9]
+        ludf.RBIp1 = avg_rbi[1]
+        ludf.RBIp2 = avg_rbi[2]
+        ludf.RBIp3 = avg_rbi[3]
+        ludf.RBIp4 = avg_rbi[4]
+        ludf.RBIp5 = avg_rbi[5]
+        ludf.RBIp6 = avg_rbi[6]
+        ludf.RBIp7 = avg_rbi[7]
+        ludf.RBIp8 = avg_rbi[8]
+        ludf.RBIp9 = avg_rbi[9]
+        
+        println("Lineup already seen")
+    else
+        
+        # Parse the Lineup string manually
+        try
+            
+            # Remove single quotes and split by comma
+            elements = split(replace(lineup_str, "'" => ""))
+            elements = [replace(el, "," => "") for el in elements]
+
+            # Remove any extra spaces and convert to integers
+            lineup = [parse(Int, strip(el)) for el in elements]
+            
+        catch e
+            println("Error parsing lineup string: ", lineup_str)
+            println("Error message: ", e)
+            continue
+        end
+
+        print(lineup)
+        if length(lineup) == 9
+          
+              println("Processing lineup: ", lineup_str)
+              
+              avg, vari, stdev, maxx, minn, avg_rs, avg_rbi = average_score(lineup, numSims)
+              println(avg, " ", vari," ",  stdev," ",  maxx," ",  minn," ",  avg_rs," ",  avg_rbi)
+              seenLineups[lineup_str] = avg, vari, stdev, maxx, minn, avg_rs, avg_rbi
+
+              ludf.score2[i] = avg
+              ludf.var[i] = vari
+              ludf.stdev[i] = stdev
+              ludf.maxval[i] = maxx
+              ludf.minval[i] = minn
+              ludf.RSp1 = avg_rs[1]
+              ludf.RSp2 = avg_rs[2]
+              ludf.RSp3 = avg_rs[3]
+              ludf.RSp4 = avg_rs[4]
+              ludf.RSp5 = avg_rs[5]
+              ludf.RSp6 = avg_rs[6]
+              ludf.RSp7 = avg_rs[7]
+              ludf.RSp8 = avg_rs[8]
+              ludf.RSp9 = avg_rs[9]
+              ludf.RBIp1 = avg_rbi[1]
+              ludf.RBIp2 = avg_rbi[2]
+              ludf.RBIp3 = avg_rbi[3]
+              ludf.RBIp4 = avg_rbi[4]
+              ludf.RBIp5 = avg_rbi[5]
+              ludf.RBIp6 = avg_rbi[6]
+              ludf.RBIp7 = avg_rbi[7]
+              ludf.RBIp8 = avg_rbi[8]
+              ludf.RBIp9 = avg_rbi[9]
+        
+
+println(ludf.score2)
+CSV.write("playersim.csv", ludf)
+
