@@ -460,8 +460,8 @@ ludf.RBIp7 = Vector{Float64}(undef, nrow(ludf))
 ludf.RBIp8 = Vector{Float64}(undef, nrow(ludf))
 ludf.RBIp9 = Vector{Float64}(undef, nrow(ludf))
 
-seenLineups = Dict{String, Float64}()
-numSims = 50000
+seenLineups = Dict{String, Tuple}()
+
 println("Number of simulations per game: ", numSims)
 
 for i in 1:nrow(ludf)
@@ -475,30 +475,30 @@ for i in 1:nrow(ludf)
 
     if haskey(seenLineups, lineup_str)
         # Use the cached value
-        avg, vari, stdev, maxx, minn, avg_rs, avg_rbi = seenLineups[lineup_str]
+        (avg, vari, stdev, maxx, minn, avg_rs, avg_rbi) = seenLineups[lineup_str]
         ludf.score2[i] = avg
         ludf.var[i] = vari
         ludf.stdev[i] = stdev
         ludf.maxval[i] = maxx
         ludf.minval[i] = minn
-        ludf.RSp1 = avg_rs[1]
-        ludf.RSp2 = avg_rs[2]
-        ludf.RSp3 = avg_rs[3]
-        ludf.RSp4 = avg_rs[4]
-        ludf.RSp5 = avg_rs[5]
-        ludf.RSp6 = avg_rs[6]
-        ludf.RSp7 = avg_rs[7]
-        ludf.RSp8 = avg_rs[8]
-        ludf.RSp9 = avg_rs[9]
-        ludf.RBIp1 = avg_rbi[1]
-        ludf.RBIp2 = avg_rbi[2]
-        ludf.RBIp3 = avg_rbi[3]
-        ludf.RBIp4 = avg_rbi[4]
-        ludf.RBIp5 = avg_rbi[5]
-        ludf.RBIp6 = avg_rbi[6]
-        ludf.RBIp7 = avg_rbi[7]
-        ludf.RBIp8 = avg_rbi[8]
-        ludf.RBIp9 = avg_rbi[9]
+        ludf.RSp1[i] = avg_rs[1]
+        ludf.RSp2[i] = avg_rs[2]
+        ludf.RSp3[i] = avg_rs[3]
+        ludf.RSp4[i] = avg_rs[4]
+        ludf.RSp5[i] = avg_rs[5]
+        ludf.RSp6[i] = avg_rs[6]
+        ludf.RSp7[i] = avg_rs[7]
+        ludf.RSp8[i] = avg_rs[8]
+        ludf.RSp9[i] = avg_rs[9]
+        ludf.RBIp1[i] = avg_rbi[1]
+        ludf.RBIp2[i] = avg_rbi[2]
+        ludf.RBIp3[i] = avg_rbi[3]
+        ludf.RBIp4[i] = avg_rbi[4]
+        ludf.RBIp5[i] = avg_rbi[5]
+        ludf.RBIp6[i] = avg_rbi[6]
+        ludf.RBIp7[i] = avg_rbi[7]
+        ludf.RBIp8[i] = avg_rbi[8]
+        ludf.RBIp9[i] = avg_rbi[9]
         
         println("Lineup already seen")
     else
@@ -526,31 +526,34 @@ for i in 1:nrow(ludf)
               
               avg, vari, stdev, maxx, minn, avg_rs, avg_rbi = average_score(lineup, numSims)
               println(avg, " ", vari," ",  stdev," ",  maxx," ",  minn," ",  avg_rs," ",  avg_rbi)
-              seenLineups[lineup_str] = avg, vari, stdev, maxx, minn, avg_rs, avg_rbi
+              seenLineups[lineup_str] = (avg, vari, stdev, maxx, minn, avg_rs, avg_rbi)
 
               ludf.score2[i] = avg
               ludf.var[i] = vari
               ludf.stdev[i] = stdev
               ludf.maxval[i] = maxx
               ludf.minval[i] = minn
-              ludf.RSp1 = avg_rs[1]
-              ludf.RSp2 = avg_rs[2]
-              ludf.RSp3 = avg_rs[3]
-              ludf.RSp4 = avg_rs[4]
-              ludf.RSp5 = avg_rs[5]
-              ludf.RSp6 = avg_rs[6]
-              ludf.RSp7 = avg_rs[7]
-              ludf.RSp8 = avg_rs[8]
-              ludf.RSp9 = avg_rs[9]
-              ludf.RBIp1 = avg_rbi[1]
-              ludf.RBIp2 = avg_rbi[2]
-              ludf.RBIp3 = avg_rbi[3]
-              ludf.RBIp4 = avg_rbi[4]
-              ludf.RBIp5 = avg_rbi[5]
-              ludf.RBIp6 = avg_rbi[6]
-              ludf.RBIp7 = avg_rbi[7]
-              ludf.RBIp8 = avg_rbi[8]
-              ludf.RBIp9 = avg_rbi[9]
+              ludf.RSp1[i] = avg_rs[1]
+              ludf.RSp2[i] = avg_rs[2]
+              ludf.RSp3[i] = avg_rs[3]
+              ludf.RSp4[i] = avg_rs[4]
+              ludf.RSp5[i] = avg_rs[5]
+              ludf.RSp6[i] = avg_rs[6]
+              ludf.RSp7[i] = avg_rs[7]
+              ludf.RSp8[i] = avg_rs[8]
+              ludf.RSp9[i] = avg_rs[9]
+              ludf.RBIp1[i] = avg_rbi[1]
+              ludf.RBIp2[i] = avg_rbi[2]
+              ludf.RBIp3[i] = avg_rbi[3]
+              ludf.RBIp4[i] = avg_rbi[4]
+              ludf.RBIp5[i] = avg_rbi[5]
+              ludf.RBIp6[i] = avg_rbi[6]
+              ludf.RBIp7[i] = avg_rbi[7]
+              ludf.RBIp8[i] = avg_rbi[8]
+              ludf.RBIp9[i] = avg_rbi[9]
+        end
+    end
+end
         
 
 println(ludf.score2)
