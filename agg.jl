@@ -250,7 +250,7 @@ function OutGet(i::Int)::Float64
     bat = Batter(i)
     global player
   
-    return playersDataOut[bat,2] + playersDataOut[bat,3]
+    return playersData[bat,2] + playersData[bat,3]
 end
 
 
@@ -351,7 +351,6 @@ ludf = CSV.read("output.csv", DataFrame)
 ludf.score2 = Vector{Float64}(undef, nrow(ludf))  # Initialize with `undef` values
 
 ludf.team = Vector{String}(undef, nrow(ludf))
-ludf.derivative = Vector{String}(undef,nrow(ludf))
 ludf.team .= tmname
 #ludf.derivative .= der
 seenLineups = Dict{String, Float64}()
