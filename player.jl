@@ -15,7 +15,7 @@ global memo = Dict{State, Float64}()
 global h_memo = Dict{Tuple{Int, Int, Int}, Float64}()
 global g_memo = Dict{Tuple{Int, Int, Int}, Float64}()
 global probmemo = Dict{Int, Float64}()
-global batted_in_memo = Dict{Int,Float64}()
+global batted_in_memo = Dict{Tuple,Float64}()
 
 config = TOML.parsefile("config.toml")
 
@@ -119,6 +119,123 @@ function f(state::State)::Float64
     return value
 end
 
+
+#PSEUDOCODE:
+#recall: f[b_i, j, OUTS, bs1, bs2, bs3] = probability you reach that state. 
+
+#FROM any state, the RBI for player b' is 
+
+#battedIn() function computes RBI for player b' from all states?. get TOTAL expected batted-in for player bprime
+#takes a specific b_prime [mod DIFFERENCE between b_i and j] and the original b_i
+   # SUM for all states where b_prime = Batters(b,j) (get TOTAL expected batted-in for player bprime)
+#this is the same for all innings because it relies solely on f --> solely on the within-inning probabilities of reaching a certain outcome, given starting conditions.
+
+#getNewBi()
+#so for inning 1: to get RBI in ING1 for players i in 1:9. battedIn(1, i=1) : battedIn(1,i=9)
+
+#what's difficult is inning 2, 3, 4... 
+#call ing1 = [p1END, p2END, ... p9END]
+#call ing2 = [p1start_ing2, ... p9start_ing2]
+
+#for ing2, iterate all Players we're interested in (i = 1:9) computing the END_ing2 probability for, then iterate all potential Starting players x = 1:9 
+#[[battedIn(start=x,end=i) * ProbInningStartedOn(X) ]] => sum for each player i 1:9 in fullrbi
+
+
+#computeNextIng() => this function takes in the start probabilities of current inning and returns start prob of NEXT inning
+#for player b' we're interestede, in 1:9: 
+#
+
+
+
+
+function getNewBi(inning)::Dict
+    fullrbi = Dict(i => 0.0 for i in 1:9)
+
+    #compute for inning 1 probabilities of ending on any give player i
+    sumstore = Dict(i => 0.0 for i in 1:9)
+    totalsum = 0.0
+    for (state, value) in memo
+        if state.b == 1 && state.outs == 3 
+            totalsum += value
+            sumstore[Batters(state.b,state.j)] += value
+        end
+    end
+    ing1 = Dict(k => v / totalsum for (k, v) in sumstore)
+    ing2 = Dict(n => ing1[(n - 1) % 9 + 1] for n in 1:9)
+    println(sum(values(ing2)))
+    #where ing2 represents the likelihood of ing2 starting with each of these players
+    for i in 1:9
+      fullrbi[i] += battedIn(1,i)
+    end
+    #this populates fullrbi with the RBIs from inning 1. 
+
+    println("RBI after ing1")
+    println(fullrbi)
+      
+
+    #innings 2 through 9 are trickier
+
+    #MAX_INNINGS = rand() < 0.25 ? 8 : 9
+    for ing in 2:9
+        
+      for i in 1:9
+        for n in 1:9
+          if ing == 9
+            fullrbi[i] += .75 * battedIn(n,i) * ing2[n] ###flag
+          else 
+            fullrbi[i] += battedIn(n,i) * ing2[n] ###flag but checked tbh
+          end
+    
+        end
+      end
+      println("RBIs after inning ", ing)
+      println(fullrbi)
+      ingnext = computeNextIng(ing2)
+      #intermediate: ingnext represents probability of ING=ing ending on 1:9
+      ing2 = Dict(n => ingnext[(n - 1) % 9 + 1] for n in 1:9)
+      #ing2 computes probability of ing_next STARTING with one of 1:9
+
+      println("Probabilities of next inning starting on players 1thru9 ")
+      println(ing2)
+      println(sum(values(ing2)))
+    end
+    return fullrbi
+end
+
+function computeNextIng(ing2::Dict{Int, Float64})::Dict{Int,Float64}
+    ing3 = Dict{Int,Float64}()
+    #initialize the ending probs for ing2.
+
+    #ing 2 is chance you start on each of p1, p2, ... p9. 
+    #for playeri in 1:9
+        #chance that you END on playeri (example i=1) is the
+            #SUM over n in 1:9 where n is wrapper: sum the
+            #chance you started at p1 * probability you score mod wrap 9 + ing2[p2]*sumStore[scoremod8] + ing2[p3]*sumStore[scoremod7]
+            # SUM[n in 1:9] ing2[(i+n) mod 9] * sumStore[n]
+
+        #chance that you END on player i is the 
+            #SUM: 
+            # startProb[i] * modWrapProb[9]
+            #startProb[i+1] * modWrapProb[1]
+            #startProb[i+2] * modWrapProb[2] ... = SIGMA_n ing2[(i+n - 1) % 9] adj for 0-index, * sumstore[n]
+    for i in 1:9
+        sumstore = Dict(i => 0.0 for i in 1:9)
+        totalsum = 0.0
+        for (state, value) in memo
+            if state.b == i && state.outs == 3 
+                totalsum += value
+                sumstore[Batters(state.b,state.j)] += value
+            end
+        end
+        sumstore = Dict(k => v / totalsum for (k, v) in sumstore)
+        for n in 1:9
+            ing3[i] = get(ing3, i, 0.0) + (ing2[((i+n−1−1)%9)+1] * sumstore[n])
+        end
+    end
+    return ing3
+end
+
+
 # Compute the number of runs scored in a state
 function runsScored(state::State)::Float64
     b, j, outs, base1, base2, base3 = state.b, state.j, state.outs, state.base1, state.base2, state.base3
@@ -126,8 +243,8 @@ function runsScored(state::State)::Float64
 end
 
 #expectation of player bprime runs batted in 
-function battedIn(b_prime::Int)::Float64
-    key = b_prime
+function battedIn(b_i, b_prime::Int)::Float64
+    key = (b_i, b_prime)
     if haskey(batted_in_memo, key)
         return batted_in_memo[key]
     end
@@ -138,7 +255,7 @@ function battedIn(b_prime::Int)::Float64
     #for b_i in b_range
     for (state, value) in memo
         
-        if Batters(state.b,state.j) == b_prime 
+        if state.b == b_i && Batters(state.b,state.j) == b_prime && state.outs <3
             if state.base1 == 0 && state.base2 == 0 && state.base3 == 0
               sumstore += HomeRun(b_prime) * value
             end
@@ -152,7 +269,7 @@ function battedIn(b_prime::Int)::Float64
               sumstore += (3*HomeRun(b_prime) + 2*Triple(b_prime) + 1*Double(b_prime) + 1*Single(b_prime)) * value
             end
             if state.base1 == 1 && state.base2 == 1 && state.base3 == 1
-              sumstore += (4*HomeRun(b_prime) + 3*Triple(b_prime) + 2*Double(b_prime) + 1*Single(b_prime)) * value
+              sumstore += (4*HomeRun(b_prime) + 3*Triple(b_prime) + 2*Double(b_prime) + 1*Single(b_prime) + 1*Walk(b_prime)) * value
             end
             if state.base1 == 0 && state.base2 == 1 && state.base3 == 0
               sumstore += (2*HomeRun(b_prime) + 1*Triple(b_prime) + 1*Double(b_prime)) * value
@@ -172,6 +289,7 @@ function battedIn(b_prime::Int)::Float64
     batted_in_memo[key] = sumstore
     return sumstore
 end
+
 
 #sum(f(State(b, j - 1, outs, b1, b2, b3)) for b1 in [0, 1], b2 in [0, 1], b3 in [0, 1])
 
@@ -374,12 +492,13 @@ lineups = permutations(1:NUM_BATTERS)
 println("Processing f memo")
 @time populateMemo()
 
-println("Processing batted-in runs memo")
+
+println("RBIs by Player: ")
+fullrbi = getNewBi(1)
 for b in b_range
-  battedIn(b)
+  println(fullrbi[b])
 end
-for b in b_range
-  batted_in_memo[b] *= 8.75
-  println(b)
-  println(batted_in_memo[b])
-end
+
+println("sum of RBIs for all players")
+println(sum(values(fullrbi)))
+
