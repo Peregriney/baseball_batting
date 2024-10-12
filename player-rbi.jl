@@ -573,6 +573,7 @@ end
 println(sum(values(fullrbi)))
 =#
 
+#=
 populateMemo()
 println("RunsScored for each player: ")
 fullrbi = getNewRS(1)
@@ -581,6 +582,7 @@ for b in b_range
 end
 
 println(sum(values(fullrbi)))
+=#
 
 
 # Read existing lineups from the CSV into a set
@@ -590,6 +592,7 @@ function read_existing_lineups(filename)
 end
 
 ludf = CSV.read("output.csv", DataFrame)
+#=
 ludf.score2 = Vector{Float64}(undef, nrow(ludf))  # Initialize with `undef` values
 ludf.var = Vector{Float64}(undef, nrow(ludf))
 ludf.stdev = Vector{Float64}(undef, nrow(ludf))
@@ -605,6 +608,7 @@ ludf.RSp6 = Vector{Float64}(undef, nrow(ludf))
 ludf.RSp7 = Vector{Float64}(undef, nrow(ludf))
 ludf.RSp8 = Vector{Float64}(undef, nrow(ludf))
 ludf.RSp9 = Vector{Float64}(undef, nrow(ludf))
+=#
 
 ludf.RBIp1 = Vector{Float64}(undef, nrow(ludf))
 ludf.RBIp2 = Vector{Float64}(undef, nrow(ludf))
@@ -619,7 +623,7 @@ ludf.RBIp9 = Vector{Float64}(undef, nrow(ludf))
 seenLineups = Dict{String, Tuple}()
 
 
-#=
+
 for i in 1:nrow(ludf)
 
     row = ludf[i,:]
@@ -632,8 +636,8 @@ for i in 1:nrow(ludf)
 
     if haskey(seenLineups, lineup_str)
         # Use the cached value
-        (avg_rs, avg_rbi) = seenLineups[lineup_str]
-
+        (avg_rbi, avg_rs) = seenLineups[lineup_str]
+        #=
         ludf.RSp1[i] = avg_rs[1]
         ludf.RSp2[i] = avg_rs[2]
         ludf.RSp3[i] = avg_rs[3]
@@ -643,6 +647,7 @@ for i in 1:nrow(ludf)
         ludf.RSp7[i] = avg_rs[7]
         ludf.RSp8[i] = avg_rs[8]
         ludf.RSp9[i] = avg_rs[9]
+        =#
         ludf.RBIp1[i] = avg_rbi[1]
         ludf.RBIp2[i] = avg_rbi[2]
         ludf.RBIp3[i] = avg_rbi[3]
@@ -679,9 +684,11 @@ for i in 1:nrow(ludf)
               populateMemo()
 
               avg_rbi = getNewBi(1)
-              avg_rs = getNewRS(1)
+              #avg_rs = getNewRS(1)
               
-              seenLineups[lineup_str] = (avg_rs, avg_rbi)
+              
+              seenLineups[lineup_str] = (avg_rbi, 1)
+              #=
               ludf.RSp1[i] = avg_rs[1]
               ludf.RSp2[i] = avg_rs[2]
               ludf.RSp3[i] = avg_rs[3]
@@ -691,6 +698,7 @@ for i in 1:nrow(ludf)
               ludf.RSp7[i] = avg_rs[7]
               ludf.RSp8[i] = avg_rs[8]
               ludf.RSp9[i] = avg_rs[9]
+              =#
               ludf.RBIp1[i] = avg_rbi[1]
               ludf.RBIp2[i] = avg_rbi[2]
               ludf.RBIp3[i] = avg_rbi[3]
@@ -705,7 +713,7 @@ for i in 1:nrow(ludf)
 end
         
 
-println(ludf.score2)
+#println(ludf.score2)
 CSV.write("playerDP.csv", ludf)
 
-=#
+
