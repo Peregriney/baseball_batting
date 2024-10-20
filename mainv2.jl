@@ -370,7 +370,7 @@ for i in 1:nrow(ludf)
     lineup_str = strip(lineup_str, ['[', ']'])
 
     if haskey(seenLineups, lineup_str)
-        # Use the cached value
+        # Use the cached value if lineup already computed.
         lineupval, k, v = seenLineups[lineup_str]
         ludf.score2[i] = lineupval
         ludf.expectedRs[i] = k
@@ -383,11 +383,9 @@ for i in 1:nrow(ludf)
         try
             global penultimate_index
             
-            # Remove single quotes and split by comma
+            # Parse and clean lineuup string
             elements = split(replace(lineup_str, "'" => ""))
             elements = [replace(el, "," => "") for el in elements]
-
-            # Remove any extra spaces and convert to integers
             lineup = [parse(Int, strip(el)) for el in elements]            
             # Replace the last element of the lineup with the penultimate index
             lineup[end] = penultimate_index
@@ -411,7 +409,7 @@ for i in 1:nrow(ludf)
           efull = expectedRuns(MAX_R, NUM_INNINGS)
           e = 0.25 * eearly + 0.75 * efull
         
-          ludf.dp[i] = e
+          ludf.score2[i] = e
           ludf.expectedRs[i] = keys(probmemo)
           ludf.probRs[i] = values(probmemo)
           seenLineups[lineup_str] = (e, keys(probmemo), values(probmemo))
