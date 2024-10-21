@@ -323,13 +323,14 @@ function parse_args(args)
 end
 
 # Randomly initialize batting order (lineup) if none given
-if length(ARGS) <2 || length(ARGS) != NUM_BATTERS+1
+if length(ARGS) <2 || length(ARGS) != NUM_BATTERS+2
     println("batting lineup initialized to random. No lineup given") 
     global lineup = randperm(NUM_BATTERS)
     println("lineup", lineup)
-elseif length(ARGS) == NUM_BATTERS + 1
+elseif length(ARGS) == NUM_BATTERS + 2
     global lineup = parse_args(ARGS[2:NUM_BATTERS+1])
     println("accepted batting lineup", lineup)
+    global team = ARGS[NUM_BATTERS+2]
 end
 
 function Batter(idx::Int)::Int
@@ -355,14 +356,16 @@ end
 
 ludf = CSV.read("output.csv", DataFrame)
 ludf.score2 = Vector{Float64}(undef, nrow(ludf))  # Initialize with `undef` values
-ludf.expectedRs = Vector{String}(undef,nrow(ludf))
-ludf.probRs = Vector{String}(undef,nrow(ludf))
-seenLineups = Dict{String, Float64}()
+ludf.expectedrs = Vector{String}(undef, nrow(ludf))
+ludf.probrs = Vector{String}(undef, nrow(ludf))
+ludf.team = Vector{String}(undef, nrow(ludf))
+
+seenLineups = Dict{String, Tuple}()
 # Get the index of the penultimate row
 global penultimate_index = nrow(playersData) - 1
 
 # Loop through each permutation
-for i in 1:nrow(ludf)
+for i in 1:1 #nrow(ludf)
     row = ludf[i,:]
     lineup_str = row.Lineup
 
@@ -370,24 +373,23 @@ for i in 1:nrow(ludf)
     lineup_str = strip(lineup_str, ['[', ']'])
 
     if haskey(seenLineups, lineup_str)
-        # Use the cached value if lineup already computed.
-        lineupval, k, v = seenLineups[lineup_str]
+        # Use the cached value
+        (lineupval, k, v) = seenLineups[lineup_str]
         ludf.score2[i] = lineupval
-        ludf.expectedRs[i] = k
-        ludf.probRs[i] = v
+        ludf.expectedrs[i] = k
+        ludf.probrs[i] = v
 
         println("Lineup already seen")
     else
-        
+        global team
         # Parse the Lineup string manually
         try
             global penultimate_index
-            
-            # Parse and clean lineuup string
+
             elements = split(replace(lineup_str, "'" => ""))
             elements = [replace(el, "," => "") for el in elements]
             lineup = [parse(Int, strip(el)) for el in elements]            
-            # Replace the last element of the lineup with the penultimate index
+            # Replace the last element of the lineup with the team-average index
             lineup[end] = penultimate_index
             
         catch e
@@ -410,13 +412,28 @@ for i in 1:nrow(ludf)
           e = 0.25 * eearly + 0.75 * efull
         
           ludf.score2[i] = e
-          ludf.expectedRs[i] = keys(probmemo)
-          ludf.probRs[i] = values(probmemo)
-          seenLineups[lineup_str] = (e, keys(probmemo), values(probmemo))
+          sortedkeys = sort(collect(keys(probmemo)))
+          sortedvals = [probmemo[k] for k in sortedkeys]
+          ludf.expectedrs[i] = join(sortedkeys, ", ")
+          ludf.probrs[i] = join(sortedvals, ", ")
+          ludf.team[i] = team
+          seenLineups[lineup_str] = (e, join(sortedkeys, ", "), join(sortedvals, ", "))
         end
     end
 end
 println(ludf.score2)
 
-CSV.write("v2_probs.csv", ludf)
+# Assuming ludf is your DataFrame
+#ludf.expectedrs .= [x === nothing ? "na" : x for x in ludf.expectedrs]
+#ludf.probrs .= [x === nothing ? "na" : x for x in ludf.probrs]  
+
+ludf = ludf[1:1,:]
+println(ludf)
+println(names(ludf))
+#println(any(ismissing, ludf))
+#CSV.write("test.csv", ludf[1:1, :])  # Write the first 5 rows
+
+CSV.write("v2_probs.csv", ludf,append=true)
+
+
 
