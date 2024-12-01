@@ -544,9 +544,15 @@ seenLineups = Dict{String, Tuple}()
 global penultimate_index = nrow(playersData)
 
 
+if lineupmode == "lineups"
+  k = 30
+elseif lineupmode == "teamavg"
+  k = 1
+else
+  k = nrow(ludf)
+end
 
-
-for i in 1:30#nrow(ludf)
+for i in 1:k
 
     row = ludf[i,:]
     lineup_str = row.Lineup
@@ -574,6 +580,10 @@ for i in 1:30#nrow(ludf)
 
             # Remove any extra spaces and convert to integers
             lineup = [parse(Int, strip(el)) for el in elements]
+
+            if lineupmode == "teamavg"
+              lineup = fill(penultimate_index, 9)
+            end
             
         catch e
             println("Error parsing lineup string: ", lineup_str)
@@ -597,7 +607,5 @@ for i in 1:30#nrow(ludf)
         end
     end
 end
-
-
 
 CSV.write("v2_onbase_probs.csv", ludf,append=true)
